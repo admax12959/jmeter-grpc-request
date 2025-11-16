@@ -48,6 +48,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
     private String[] protoMethods;
 
     private JTextField protoFolderField;
+    private JCheckBox useInlineProtoCheckBox;
+    private javax.swing.JTextArea protoContentArea;
+    private javax.swing.JTextArea libContentArea;
     private JButton protoBrowseButton;
 
     private JTextField libFolderField;
@@ -103,6 +106,13 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         grpcSampler = (GRPCSampler) element;
         grpcSampler.setProtoFolder(this.protoFolderField.getText());
         grpcSampler.setLibFolder(this.libFolderField.getText());
+        if (useInlineProtoCheckBox.isSelected()) {
+            grpcSampler.setProtoContent(this.protoContentArea.getText());
+            grpcSampler.setLibContentZip(this.libContentArea.getText());
+        } else {
+            grpcSampler.setProtoContent("");
+            grpcSampler.setLibContentZip("");
+        }
         grpcSampler.setMetadata(this.metadataField.getText());
         grpcSampler.setHost(this.hostField.getText());
         grpcSampler.setPort(this.portField.getText());
@@ -127,6 +137,13 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         grpcSampler = (GRPCSampler) element;
         protoFolderField.setText(grpcSampler.getProtoFolder());
         libFolderField.setText(grpcSampler.getLibFolder());
+        String pc = grpcSampler.getProtoContent();
+        String lc = grpcSampler.getLibContentZip();
+        boolean useInline = pc != null && !pc.isEmpty();
+        useInlineProtoCheckBox.setSelected(useInline);
+        protoContentArea.setText(pc);
+        libContentArea.setText(lc);
+        toggleInline(useInline);
         metadataField.setText(grpcSampler.getMetadata());
         hostField.setText(grpcSampler.getHost());
         portField.setText(grpcSampler.getPort());
@@ -186,6 +203,15 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         mainPanel.add(getOptionConfigPanel());
         mainPanel.add(getRequestJSONPanel());
         add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private void toggleInline(boolean inline) {
+        protoContentArea.setEnabled(inline);
+        libContentArea.setEnabled(inline);
+        protoFolderField.setEnabled(!inline);
+        libFolderField.setEnabled(!inline);
+        protoBrowseButton.setEnabled(!inline);
+        libBrowseButton.setEnabled(!inline);
     }
 
     /** Helper function */
@@ -288,6 +314,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
         JLabel metadataLabel = new JLabel("Metadata:");
         metadataField = new JTextField("", 32); // $NON-NLS-1$
+        metadataField.setEditable(false);
         JButton metadataEditButton = new JButton("Edit...");
         metadataEditButton.addActionListener(
                 e -> {
@@ -377,6 +404,28 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
         libBrowseButton.addActionListener(new BrowseAction(libFolderField, true));
 
+        // Inline proto switch
+        addToPanel(
+                requestPanel, labelConstraints, 0, row, new JLabel("Use Inline Protos:", JLabel.RIGHT));
+        useInlineProtoCheckBox = new JCheckBox();
+        useInlineProtoCheckBox.addActionListener(e -> toggleInline(useInlineProtoCheckBox.isSelected()));
+        addToPanel(requestPanel, editConstraints, 1, row, useInlineProtoCheckBox);
+        row++;
+
+        // Inline proto content
+        addToPanel(
+                requestPanel, labelConstraints, 0, row, new JLabel("Proto Content:", JLabel.RIGHT));
+        protoContentArea = new javax.swing.JTextArea(5, 20);
+        addToPanel(requestPanel, editConstraints, 1, row, new JTextScrollPane(protoContentArea));
+        row++;
+
+        // Inline lib content (base64 zip)
+        addToPanel(
+                requestPanel, labelConstraints, 0, row, new JLabel("Lib Content (Base64 ZIP):", JLabel.RIGHT));
+        libContentArea = new javax.swing.JTextArea(3, 20);
+        addToPanel(requestPanel, editConstraints, 1, row, new JTextScrollPane(libContentArea));
+        row++;
+
         // Full method
         addToPanel(
                 requestPanel, labelConstraints, 0, row, new JLabel("Full Method: ", JLabel.RIGHT));
@@ -389,6 +438,16 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                 2,
                 row,
                 fullMethodButton = new JButton("Listing..."));
+
+        // Progress + Cancel for async method loading
+        row++;
+        methodProgressBar = new javax.swing.JProgressBar();
+        methodProgressBar.setIndeterminate(true);
+        methodProgressBar.setVisible(false);
+        methodCancelButton = new JButton("Cancel");
+        methodCancelButton.setVisible(false);
+        addToPanel(requestPanel, editConstraints, 1, row, methodProgressBar);
+        addToPanel(requestPanel, labelConstraints, 2, row, methodCancelButton);
 
         // fullMethodButton click listener
         registerListGRPCMethodListener();
@@ -430,7 +489,8 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
     private void loadProtoMethodsAsync(boolean reload) {
         fullMethodButton.setEnabled(false);
         fullMethodField.setEnabled(false);
-        vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.loadAsync(
+        javax.swing.SwingWorker<java.util.List<String>, Void> worker =
+                vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.loadAsync(
                 grpcSampler.getProtoFolder(),
                 grpcSampler.getLibFolder(),
                 reload,
@@ -440,6 +500,8 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                         updateMethodModel(methods);
                         fullMethodButton.setEnabled(true);
                         fullMethodField.setEnabled(true);
+                        if (methodProgressBar != null) methodProgressBar.setVisible(false);
+                        if (methodCancelButton != null) methodCancelButton.setVisible(false);
                     }
 
                     @Override
@@ -447,8 +509,15 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                         showError("Failed to load methods: " + t.getMessage());
                         fullMethodButton.setEnabled(true);
                         fullMethodField.setEnabled(true);
+                        if (methodProgressBar != null) methodProgressBar.setVisible(false);
+                        if (methodCancelButton != null) methodCancelButton.setVisible(false);
                     }
                 });
+        if (methodProgressBar != null) methodProgressBar.setVisible(true);
+        if (methodCancelButton != null) {
+            methodCancelButton.setVisible(true);
+            methodCancelButton.addActionListener(ev -> worker.cancel(true));
+        }
     }
 
     private void updateMethodModel(List<String> methodList) {

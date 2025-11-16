@@ -74,6 +74,47 @@ public class ProtocInvoker {
         return new ProtocInvoker(discoveryRootPath, includePaths.build());
     }
 
+    /** Creates a new {@link ProtocInvoker} with inline proto content and optional library zip. */
+    public static ProtocInvoker forInline(String protoContent, String libContentZipBase64) {
+        try {
+            Path tmpRoot = Files.createTempDirectory("inline-proto");
+            Path inline = tmpRoot.resolve("inline.proto");
+            Files.write(inline, protoContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            ImmutableList.Builder<Path> includes = ImmutableList.builder();
+
+            if (libContentZipBase64 != null && !libContentZipBase64.trim().isEmpty()) {
+                Path libDir = tmpRoot.resolve("lib");
+                Files.createDirectories(libDir);
+                byte[] zipBytes = java.util.Base64.getDecoder().decode(libContentZipBase64);
+                try (java.util.zip.ZipInputStream zis =
+                        new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
+                    java.util.zip.ZipEntry entry;
+                    while ((entry = zis.getNextEntry()) != null) {
+                        Path out = libDir.resolve(entry.getName());
+                        if (entry.isDirectory()) {
+                            Files.createDirectories(out);
+                        } else {
+                            Files.createDirectories(out.getParent());
+                            try (java.io.OutputStream os = Files.newOutputStream(out)) {
+                                byte[] buf = new byte[8192];
+                                int r;
+                                while ((r = zis.read(buf)) >= 0) os.write(buf, 0, r);
+                            }
+                        }
+                    }
+                }
+                includes.add(libDir);
+            }
+
+            PROTO_TEMP_FOLDER_PATHS.add(tmpRoot);
+            return new ProtocInvoker(inline, includes.build());
+        } catch (Exception e) {
+            throw new vn.zalopay.benchmark.exception.ProtocInvocationException(
+                    "Unable to prepare inline proto content", e);
+        }
+    }
+
     private static boolean isBinDescriptor(Path path) {
         return path.toString().endsWith(DESCRIPTOR_EXTENSION);
     }

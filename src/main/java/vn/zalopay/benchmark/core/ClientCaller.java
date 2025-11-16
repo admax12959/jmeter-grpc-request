@@ -83,7 +83,16 @@ public class ClientCaller implements AutoCloseable {
             final DescriptorProtos.FileDescriptorSet fileDescriptorSet;
 
             try {
-                fileDescriptorSet = ProtocInvoker.forConfig(testProtoFiles, libFolder).invoke();
+                if (requestConfig.getProtoContent() != null
+                        && !requestConfig.getProtoContent().trim().isEmpty()) {
+                    fileDescriptorSet =
+                            ProtocInvoker.forInline(
+                                            requestConfig.getProtoContent(),
+                                            requestConfig.getLibContentZipBase64())
+                                    .invoke();
+                } else {
+                    fileDescriptorSet = ProtocInvoker.forConfig(testProtoFiles, libFolder).invoke();
+                }
             } catch (Exception e) {
                 shutdownNettyChannel();
                 throw new RuntimeException(

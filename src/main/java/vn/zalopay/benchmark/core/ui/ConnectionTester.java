@@ -46,5 +46,38 @@ public class ConnectionTester {
             ch.shutdownNow();
         }
     }
-}
 
+    /**
+     * Parse simple Subject/Issuer details from CA PEM file for diagnostics.
+     */
+    static String parseCertDetails(String caPemPath) {
+        if (caPemPath == null || caPemPath.trim().isEmpty()) return "";
+        try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(
+                java.nio.file.Paths.get(caPemPath))) {
+            StringBuilder pem = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) pem.append(line).append('\n');
+            String pemStr = pem.toString();
+            String[] entries = pemStr.split("-----END CERTIFICATE-----");
+            StringBuilder out = new StringBuilder();
+            java.security.cert.CertificateFactory cf =
+                    java.security.cert.CertificateFactory.getInstance("X.509");
+            for (String e : entries) {
+                if (!e.contains("BEGIN CERTIFICATE")) continue;
+                String certPem = (e + "-----END CERTIFICATE-----").trim();
+                byte[] der = java.util.Base64.getMimeDecoder().decode(
+                        certPem.replace("-----BEGIN CERTIFICATE-----", "")
+                                .replace("-----END CERTIFICATE-----", "")
+                                .replaceAll("\\s", ""));
+                java.security.cert.X509Certificate x =
+                        (java.security.cert.X509Certificate) cf.generateCertificate(
+                                new java.io.ByteArrayInputStream(der));
+                out.append("Subject: ").append(x.getSubjectX500Principal().getName()).append('\n');
+                out.append("Issuer: ").append(x.getIssuerX500Principal().getName()).append('\n');
+            }
+            return out.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+}

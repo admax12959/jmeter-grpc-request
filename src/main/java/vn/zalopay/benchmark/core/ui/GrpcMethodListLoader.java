@@ -38,9 +38,9 @@ public final class GrpcMethodListLoader {
     /**
      * Load methods asynchronously using SwingWorker. The callback is executed on EDT.
      */
-    public static void loadAsync(
+    public static SwingWorker<List<String>, Void> loadAsync(
             String protoFolder, String libFolder, boolean reload, Callback callback) {
-        new SwingWorker<List<String>, Void>() {
+        SwingWorker<List<String>, Void> worker = new SwingWorker<List<String>, Void>() {
             @Override
             protected List<String> doInBackground() throws Exception {
                 return loadSync(protoFolder, libFolder, reload);
@@ -55,7 +55,8 @@ public final class GrpcMethodListLoader {
                     callback.onError(e.getCause() != null ? e.getCause() : e);
                 }
             }
-        }.execute();
+        };
+        worker.execute();
+        return worker;
     }
 }
-

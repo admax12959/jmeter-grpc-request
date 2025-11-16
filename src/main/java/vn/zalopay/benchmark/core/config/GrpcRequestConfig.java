@@ -21,6 +21,10 @@ public class GrpcRequestConfig {
     private String caPemPath; // Trusted CA or server certificate (PEM)
     private String clientCertPemPath; // Client certificate chain (PEM)
     private String clientKeyPemPath; // Client private key (PKCS#8 PEM)
+
+    // Inline protos and library content (optional)
+    private String protoContent; // inline .proto content (single file)
+    private String libContentZipBase64; // base64-encoded ZIP of library directory
     private int awaitTerminationTimeout = 5000;
 
     public GrpcRequestConfig() {}
@@ -61,6 +65,27 @@ public class GrpcRequestConfig {
         this.caPemPath = caPemPath;
         this.clientCertPemPath = clientCertPemPath;
         this.clientKeyPemPath = clientKeyPemPath;
+    }
+
+    public GrpcRequestConfig(
+            String hostPort,
+            String fullMethod,
+            boolean tls,
+            int awaitTerminationTimeout,
+            String caPemPath,
+            String clientCertPemPath,
+            String clientKeyPemPath,
+            String protoContent,
+            String libContentZipBase64) {
+        this.hostPort = hostPort;
+        this.fullMethod = fullMethod;
+        this.tls = tls;
+        this.awaitTerminationTimeout = awaitTerminationTimeout;
+        this.caPemPath = caPemPath;
+        this.clientCertPemPath = clientCertPemPath;
+        this.clientKeyPemPath = clientKeyPemPath;
+        this.protoContent = protoContent;
+        this.libContentZipBase64 = libContentZipBase64;
     }
 
     public String getHostPort() {
@@ -129,6 +154,10 @@ public class GrpcRequestConfig {
                 + ", clientKeyPemPath='"
                 + clientKeyPemPath
                 + '\''
+                + ", protoContent="
+                + (protoContent == null ? "null" : "<inline>")
+                + ", libContentZipBase64="
+                + (libContentZipBase64 == null ? "null" : "<base64 zip>")
                 + ", awaitTerminationTimeout="
                 + awaitTerminationTimeout
                 + '}';

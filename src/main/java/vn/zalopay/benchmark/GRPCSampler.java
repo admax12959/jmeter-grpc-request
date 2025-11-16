@@ -28,6 +28,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public static final String METADATA = "GRPCSampler.metadata";
     public static final String LIB_FOLDER = "GRPCSampler.libFolder";
     public static final String PROTO_FOLDER = "GRPCSampler.protoFolder";
+    public static final String PROTO_CONTENT = "GRPCSampler.protoContent";
     public static final String HOST = "GRPCSampler.host";
     public static final String PORT = "GRPCSampler.port";
     public static final String FULL_METHOD = "GRPCSampler.fullMethod";
@@ -44,6 +45,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
             "GRPCSampler" + ".maxInboundMessageSize";
     public static final String CHANNEL_MAX_INBOUND_METADATA_SIZE =
             "GRPCSampler.maxInboundMetadataSize";
+    public static final String LIB_CONTENT_ZIP = "GRPCSampler.libContentZip";
     private transient ClientCaller clientCaller;
     private GrpcRequestConfig grpcRequestConfig;
 
@@ -70,7 +72,9 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
                     GrpcRequestConfig.builder()
                             .hostPort(getHostPort())
                             .protoFolder(getProtoFolder())
+                            .protoContent(getProtoContent())
                             .libFolder(getLibFolder())
+                            .libContentZipBase64(getLibContentZip())
                             .fullMethod(getFullMethod())
                             .tls(isTls())
                             .caPemPath(getTlsCaPemPath())
@@ -238,6 +242,9 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
         setProperty(PROTO_FOLDER, protoFolder);
     }
 
+    public String getProtoContent() { return getPropertyAsString(PROTO_CONTENT); }
+    public void setProtoContent(String v) { setProperty(PROTO_CONTENT, v); }
+
     public String getFullMethod() {
         return getPropertyAsString(FULL_METHOD);
     }
@@ -313,6 +320,9 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public void setChannelMaxInboundMetadataSize(String channelMaxInboundMetadataSize) {
         setProperty(CHANNEL_MAX_INBOUND_METADATA_SIZE, channelMaxInboundMetadataSize);
     }
+
+    public String getLibContentZip() { return getPropertyAsString(LIB_CONTENT_ZIP); }
+    public void setLibContentZip(String v) { setProperty(LIB_CONTENT_ZIP, v); }
 
     public String getTlsCaPemPath() { return getPropertyAsString(TLS_CA_PEM_PATH); }
     public void setTlsCaPemPath(String v) { setProperty(TLS_CA_PEM_PATH, v); }
