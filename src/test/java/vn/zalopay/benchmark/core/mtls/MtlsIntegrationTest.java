@@ -4,6 +4,13 @@ import com.google.common.net.HostAndPort;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import io.grpc.Server;
+import io.grpc.Metadata;
+import io.grpc.Context;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+import io.grpc.ForwardingServerCallListener;
+import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
@@ -52,8 +59,26 @@ public class MtlsIntegrationTest {
                         .trustManager(clientCert)
                         .clientAuth(io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth.REQUIRE)
                         .build();
+        final Metadata.Key<byte[]> TOKEN_BIN =
+                Metadata.Key.of("token-bin", Metadata.BINARY_BYTE_MARSHALLER);
+        final Context.Key<byte[]> CTX_TOKEN = Context.key("token-bin");
+
+        ServerInterceptor captureBinToken =
+                new ServerInterceptor() {
+                    @Override
+                    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
+                            ServerCall<ReqT, RespT> call,
+                            Metadata headers,
+                            ServerCallHandler<ReqT, RespT> next) {
+                        byte[] token = headers.get(TOKEN_BIN);
+                        Context ctx = CTX_TOKEN.withValue(token);
+                        return Contexts.interceptCall(ctx, call, headers, next);
+                    }
+                };
+
         Server server =
                 io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder.forPort(port)
+                        .intercept(captureBinToken)
                         .sslContext(sslContext)
                         .addService(
                                 ServerServiceDefinition.builder("echo.EchoService")
@@ -68,10 +93,12 @@ public class MtlsIntegrationTest {
                                                                                     m.getOutputType()
                                                                                             .findFieldByName(
                                                                                                     "message"),
-                                                                                    request.getField(
+                                                                                    appendToken(
+                                                                                            request.getField(
                                                                                             request.getDescriptorForType()
                                                                                                     .findFieldByName(
-                                                                                                            "message")))
+                                                                                                            "message")),
+                                                                                            CTX_TOKEN.get()))
                                                                             .build();
                                                             responseObserver.onNext(resp);
                                                             responseObserver.onCompleted();
@@ -95,9 +122,12 @@ public class MtlsIntegrationTest {
                             serverKey.getAbsolutePath());
             ClientCaller caller = new ClientCaller(cfg);
             try {
-                caller.buildRequestAndMetadata("{\"message\":\"hello\"}", "");
-                String resp = caller.call("2000").getGrpcMessageString();
-                Assert.assertTrue(resp.contains("hello"));
+            // Send binary metadata token-bin = base64("bin-value")
+            caller.buildRequestAndMetadata(
+                    "{\"message\":\"hello\"}", "{\"token-bin\":\"YmluLXZhbHVl\"}");
+            String resp = caller.call("2000").getGrpcMessageString();
+            Assert.assertTrue(resp.contains("hello"));
+            Assert.assertTrue(resp.contains("bin-value"));
             } finally {
                 caller.shutdownNettyChannel();
             }
@@ -105,5 +135,18 @@ public class MtlsIntegrationTest {
             server.shutdown();
             server.awaitTermination(3, TimeUnit.SECONDS);
         }
+    }
+
+    private static Object appendToken(Object original, byte[] token) {
+        String msg = String.valueOf(original);
+        if (token != null) {
+            try {
+                String bin = new String(token, java.nio.charset.StandardCharsets.UTF_8);
+                return msg + " token=" + bin;
+            } catch (Exception ignore) {
+                return msg;
+            }
+        }
+        return msg;
     }
 }
