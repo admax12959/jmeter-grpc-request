@@ -112,7 +112,6 @@ public class IntegrationTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
         grpcSampler.setRequestJson(REQUEST_JSON);
         return grpcSampler;
     }

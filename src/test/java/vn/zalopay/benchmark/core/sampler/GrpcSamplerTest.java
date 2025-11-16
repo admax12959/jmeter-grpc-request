@@ -31,7 +31,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setChannelShutdownAwaitTime("5000");
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
@@ -60,7 +60,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
         grpcSampler.setChannelShutdownAwaitTime("5000");
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult1 = grpcSampler.sample(null);
@@ -104,7 +104,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
@@ -131,7 +131,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("1");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
@@ -171,7 +171,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("500");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
@@ -199,7 +199,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD_INVALID);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setChannelShutdownAwaitTime("5000");
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
@@ -232,7 +232,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD_INVALID);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setChannelShutdownAwaitTime("5000");
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
@@ -261,7 +261,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setFullMethod(FULL_METHOD);
         grpcSampler.setDeadline("2000");
         grpcSampler.setTls(false);
-        grpcSampler.setTlsDisableVerification(false);
+        // TLS verification disable is not supported anymore.
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);

@@ -139,7 +139,7 @@ public class ClientCallerTest extends BaseTest {
     }
 
     @Test
-    public void testCanSendGrpcUnaryRequestWithSSLAndDisableSSLVerification() {
+    public void testCanSendGrpcUnaryRequestWithSSLWithPemTrust() {
         GrpcRequestConfig grpcRequestConfig =
                 new GrpcRequestConfig(
                         HOST_PORT_TLS,
@@ -147,8 +147,11 @@ public class ClientCallerTest extends BaseTest {
                         LIB_FOLDER.toString(),
                         FULL_METHOD,
                         true,
-                        true,
-                        DEFAULT_CHANNEL_SHUTDOWN_TIME);
+                        DEFAULT_CHANNEL_SHUTDOWN_TIME,
+                        Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.crt")
+                                .toString(),
+                        null,
+                        null);
         clientCaller = new ClientCaller(grpcRequestConfig);
         clientCaller.buildRequestAndMetadata(REQUEST_JSON, METADATA);
         GrpcResponse resp = clientCaller.call("10000");
@@ -158,7 +161,7 @@ public class ClientCallerTest extends BaseTest {
     }
 
     @Test
-    public void testCanSendGrpcUnaryRequestWithSSLAndEnableSSLVerification() {
+    public void testCanSendGrpcUnaryRequestWithSSLWithSystemTrustOrPem() {
         GrpcRequestConfig grpcRequestConfig =
                 new GrpcRequestConfig(
                         HOST_PORT_TLS,
@@ -166,8 +169,11 @@ public class ClientCallerTest extends BaseTest {
                         LIB_FOLDER.toString(),
                         FULL_METHOD,
                         true,
-                        false,
-                        DEFAULT_CHANNEL_SHUTDOWN_TIME);
+                        DEFAULT_CHANNEL_SHUTDOWN_TIME,
+                        Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.crt")
+                                .toString(),
+                        null,
+                        null);
         clientCaller = new ClientCaller(grpcRequestConfig);
         clientCaller.buildRequestAndMetadata(REQUEST_JSON, METADATA);
         GrpcResponse resp = clientCaller.call("10000");
