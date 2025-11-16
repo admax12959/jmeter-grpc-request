@@ -108,13 +108,14 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig.GrpcRequestConfigBuilder(maxInboundMessageSize=0,"
                     + " maxInboundMetadataSize=0, hostPort=null, protoFolder=null, libFolder=null,"
                     + " fullMethod=null, tls=false, tlsDisableVerification=false, caPemPath=null,"
-                    + " clientCertPemPath=null, clientKeyPemPath=null, awaitTerminationTimeout=0)");
+                    + " clientCertPemPath=null, clientKeyPemPath=null, protoContent=null,"
+                    + " libContentZipBase64=null, awaitTerminationTimeout=0)");
         Assert.assertEquals(
                 grpcRequestConfigString,
                 "GrpcRequestConfig{maxInboundMessageSize=1000, maxInboundMetadataSize=1000,"
                     + " hostPort='a', testProtoFile='b', libFolder='c', fullMethod='d', tls=true,"
                     + " caPemPath='null', clientCertPemPath='null', clientKeyPemPath='null',"
-                    + " awaitTerminationTimeout=1000}");
+                    + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=1000}");
     }
 
     @Test
@@ -127,7 +128,7 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig{maxInboundMessageSize=4194304, maxInboundMetadataSize=8192,"
                     + " hostPort='null', testProtoFile='null', libFolder='null', fullMethod='null',"
                     + " tls=false, caPemPath='null', clientCertPemPath='null', clientKeyPemPath='null',"
-                    + " awaitTerminationTimeout=5000}");
+                    + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=5000}");
     }
 
     @Test
@@ -156,7 +157,7 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig{maxInboundMessageSize=1000, maxInboundMetadataSize=1000,"
                     + " hostPort='a', testProtoFile='b', libFolder='c', fullMethod='d', tls=true,"
                     + " caPemPath='null', clientCertPemPath='null', clientKeyPemPath='null',"
-                    + " awaitTerminationTimeout=1000}");
+                    + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=1000}");
         Assert.assertTrue(grpcRequestConfig.hashCode() != 0);
         Assert.assertTrue(
                 GrpcRequestConfig.builder()
