@@ -27,6 +27,7 @@ import vn.zalopay.benchmark.core.specification.GrpcResponse;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 import javax.net.ssl.SSLException;
