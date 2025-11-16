@@ -137,6 +137,91 @@ public class MtlsIntegrationTest {
         }
     }
 
+    @Test
+    public void echoOverMtlsWithInlineProto() throws Exception {
+        int port = 18090;
+        String hostPort = HostAndPort.fromParts("localhost", port).toString();
+        String protoRoot = Paths.get(System.getProperty("user.dir"),
+                "src", "test", "resources", "mtls").toString();
+        String inlineProto = java.nio.file.Files.readString(
+                Paths.get(protoRoot, "echo.proto"));
+
+        // Build service as before
+        ServiceResolver resolver =
+                ServiceResolver.fromFileDescriptorSet(
+                        ProtocInvoker.forConfig(protoRoot, "").invoke());
+        ProtoMethodName method = ProtoMethodName.parseFullGrpcMethodName("echo.EchoService/Echo");
+        Descriptors.MethodDescriptor m = resolver.resolveServiceMethod(method);
+        io.grpc.MethodDescriptor<DynamicMessage, DynamicMessage> md =
+                io.grpc.MethodDescriptor.<DynamicMessage, DynamicMessage>newBuilder()
+                        .setFullMethodName("echo.EchoService/Echo")
+                        .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+                        .setRequestMarshaller(new DynamicMessageMarshaller(m.getInputType()))
+                        .setResponseMarshaller(new DynamicMessageMarshaller(m.getOutputType()))
+                        .build();
+
+        File serverCert = Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.crt").toFile();
+        File serverKey = Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.key").toFile();
+        File clientCert = serverCert;
+        io.grpc.netty.shaded.io.netty.handler.ssl.SslContext sslContext =
+                io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forServer(serverCert, serverKey)
+                        .trustManager(clientCert)
+                        .clientAuth(io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth.REQUIRE)
+                        .build();
+        Server server =
+                io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder.forPort(port)
+                        .sslContext(sslContext)
+                        .addService(
+                                ServerServiceDefinition.builder("echo.EchoService")
+                                        .addMethod(
+                                                md,
+                                                ServerCalls.asyncUnaryCall(
+                                                        (request, responseObserver) -> {
+                                                            DynamicMessage resp =
+                                                                    DynamicMessage.newBuilder(m.getOutputType())
+                                                                            .setField(
+                                                                                    m.getOutputType()
+                                                                                            .findFieldByName(
+                                                                                                    "message"),
+                                                                                    request.getField(
+                                                                                            request.getDescriptorForType()
+                                                                                                    .findFieldByName(
+                                                                                                            "message")))
+                                                                            .build();
+                                                            responseObserver.onNext(resp);
+                                                            responseObserver.onCompleted();
+                                                        }))
+                                        .build())
+                        .build()
+                        .start();
+        try {
+            // Use inline proto content
+            String pem = serverCert.getAbsolutePath();
+            vn.zalopay.benchmark.core.config.GrpcRequestConfig cfg =
+                    vn.zalopay.benchmark.core.config.GrpcRequestConfig.builder()
+                            .hostPort(hostPort)
+                            .fullMethod("echo.EchoService/Echo")
+                            .tls(true)
+                            .awaitTerminationTimeout(5000)
+                            .caPemPath(pem)
+                            .clientCertPemPath(pem)
+                            .clientKeyPemPath(serverKey.getAbsolutePath())
+                            .protoContent(inlineProto)
+                            .build();
+            ClientCaller caller = new ClientCaller(cfg);
+            try {
+                caller.buildRequestAndMetadata("{\\\"message\\\":\\\"hi\\\"}", "");
+                String resp = caller.call("2000").getGrpcMessageString();
+                org.testng.Assert.assertTrue(resp.contains("hi"));
+            } finally {
+                caller.shutdownNettyChannel();
+            }
+        } finally {
+            server.shutdown();
+            server.awaitTermination(3, java.util.concurrent.TimeUnit.SECONDS);
+        }
+    }
+
     private static Object appendToken(Object original, byte[] token) {
         String msg = String.valueOf(original);
         if (token != null) {
