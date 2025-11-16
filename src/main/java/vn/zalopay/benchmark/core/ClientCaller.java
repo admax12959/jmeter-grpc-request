@@ -67,7 +67,6 @@ public class ClientCaller implements AutoCloseable {
             String libFolder,
             String fullMethod,
             boolean tls,
-            boolean tlsDisableVerification,
             int awaitTerminationTimeout) {
         try {
             this.awaitTerminationTimeout = awaitTerminationTimeout;

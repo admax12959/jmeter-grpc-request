@@ -50,11 +50,11 @@ public class ChannelFactory {
             return Grpc.newChannelBuilderForAddress(
                     endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
         }
-        TlsChannelCredentials creds = buildTlsCredentials(security);
+        ChannelCredentials creds = buildTlsCredentials(security);
         return Grpc.newChannelBuilderForAddress(endpoint.getHost(), endpoint.getPort(), creds);
     }
 
-    private TlsChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {
+    private ChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {
         try {
             TlsChannelCredentials.Builder builder = TlsChannelCredentials.newBuilder();
             if (notBlank(security.getCaPemPath())) {
