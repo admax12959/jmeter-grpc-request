@@ -179,7 +179,7 @@ public class ClientCallerTest extends BaseTest {
         Assert.assertTrue(resp.getGrpcMessageString().contains("\"theme\": \"Hello server"));
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
+    @Test
     public void testCanSendGrpcUnaryRequestWithSSLAndEnableSSLVerification() {
         GrpcRequestConfig grpcRequestConfig =
                 new GrpcRequestConfig(
