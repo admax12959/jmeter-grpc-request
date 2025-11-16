@@ -94,9 +94,13 @@ public class MtlsIntegrationTest {
                             pem,
                             serverKey.getAbsolutePath());
             ClientCaller caller = new ClientCaller(cfg);
-            caller.buildRequestAndMetadata("{\"message\":\"hello\"}", "");
-            String resp = caller.call("2000").getGrpcMessageString();
-            Assert.assertTrue(resp.contains("hello"));
+            try {
+                caller.buildRequestAndMetadata("{\"message\":\"hello\"}", "");
+                String resp = caller.call("2000").getGrpcMessageString();
+                Assert.assertTrue(resp.contains("hello"));
+            } finally {
+                caller.shutdownNettyChannel();
+            }
         } finally {
             server.shutdown();
             server.awaitTermination(3, TimeUnit.SECONDS);
