@@ -71,8 +71,8 @@ public class MtlsIntegrationTest {
                             Metadata headers,
                             ServerCallHandler<ReqT, RespT> next) {
                         byte[] token = headers.get(TOKEN_BIN);
-                        Context ctx = CTX_TOKEN.withValue(token);
-                        return Contexts.interceptCall(ctx, call, headers, next);
+                        Context ctx = Context.current().withValue(CTX_TOKEN, token);
+                        return io.grpc.Contexts.interceptCall(ctx, call, headers, next);
                     }
                 };
 
