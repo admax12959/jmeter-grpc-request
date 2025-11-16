@@ -61,10 +61,17 @@ public class MtlsIntegrationTest {
                                                 md,
                                                 ServerCalls.asyncUnaryCall(
                                                         (request, responseObserver) -> {
-                                                            // Echo back the request.message field
+                                                            // Build EchoReply(message = request.message)
                                                             DynamicMessage resp =
                                                                     DynamicMessage.newBuilder(m.getOutputType())
-                                                                            .mergeFrom(request)
+                                                                            .setField(
+                                                                                    m.getOutputType()
+                                                                                            .findFieldByName(
+                                                                                                    "message"),
+                                                                                    request.getField(
+                                                                                            request.getDescriptorForType()
+                                                                                                    .findFieldByName(
+                                                                                                            "message")))
                                                                             .build();
                                                             responseObserver.onNext(resp);
                                                             responseObserver.onCompleted();
