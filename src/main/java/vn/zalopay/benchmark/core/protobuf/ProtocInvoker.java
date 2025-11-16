@@ -108,7 +108,7 @@ public class ProtocInvoker {
             }
 
             PROTO_TEMP_FOLDER_PATHS.add(tmpRoot);
-            return new ProtocInvoker(inline, includes.build());
+            return new ProtocInvoker(tmpRoot, includes.build());
         } catch (Exception e) {
             throw new vn.zalopay.benchmark.exception.ProtocInvocationException(
                     "Unable to prepare inline proto content", e);
