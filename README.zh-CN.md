@@ -43,7 +43,7 @@
 
 **jmeter-grpc-request** 插件的 `jar` 包，可以从 [Releases Page](https://github.com/zalopay-oss/jmeter-grpc-request/releases) 获得，也可以 在 [JMeter Plugins Manager](https://jmeter-plugins.org/?search=jmeter-grpc-request) 中找到
 
-注意：禁用 SSL/TLS 证书校验仅适用于开发与测试场景，生产环境请配置可信证书与信任库。
+注意：插件使用 gRPC Credentials API（grpc-netty-shaded + ALPN/HTTP2）。已移除“不安全模式”（禁用证书校验）。请使用可信的证书/信任链（PEM）。
 
 ### 使用 JMeter 发出 gRPC 请求
 创建测试脚本：
@@ -64,7 +64,7 @@
 | 1		| Server Name or IP						| gRPC服务器地址（域名或IP）																																																|
 | 2		| Port Number							| gRPC服务器端口 (80/443)																																																	|
 | 3		| SSL/TLS								| 开启SSL/TLS认证（https）																																																			|
-| 4     | Disable SSL/TLS Cert Verification     | 禁用SSL/TLS证书校验（自签证书需开启）                                                                                                                                                                                                            |
+| 4     | TLS (PEM)     | 通过 PEM 配置 TLS/mTLS：CA PEM、Client Cert PEM、Client Key PEM（PKCS#8）。窗口右侧的“Test Connection”按钮可验证握手与连通性。 |
 | 5		| Proto Root Directory					| proto文件的根路径																																																			|
 | 6		| Library Directory (Optional)			| proto文件解析需要依赖的额外库的文件夹路径 (googleapis)																																									|
 | 7		| Full Method							| 用于请求测试的RPC方法																																																		|
@@ -96,3 +96,8 @@
 ```
 mvn clean package
 ```
+
+### TLS 与 mTLS（仅 PEM）
+- TLS：在 UI 中填写 CA PEM（可使用服务端证书或信任链）
+- mTLS：额外提供 Client Cert PEM 和 Client Key PEM（PKCS#8）
+- Test Connection：点击按钮会尝试建立连接并反馈成功/失败；失败时会提示可能的证书/主机名问题
