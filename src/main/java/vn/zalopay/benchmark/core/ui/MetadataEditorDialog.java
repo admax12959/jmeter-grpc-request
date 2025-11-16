@@ -144,7 +144,8 @@ public class MetadataEditorDialog extends JDialog {
             }
             out.put(key, value);
         }
-        return new com.alibaba.fastjson.JSONObject(out).toJSONString();
+        java.util.Map<String, Object> gen = new java.util.LinkedHashMap<>(out);
+        return new com.alibaba.fastjson.JSONObject(gen).toJSONString();
     }
 
     private boolean looksLikeBase64(String s) {
@@ -160,4 +161,3 @@ public class MetadataEditorDialog extends JDialog {
         while (model.getRowCount() > 0) model.removeRow(0);
     }
 }
-
