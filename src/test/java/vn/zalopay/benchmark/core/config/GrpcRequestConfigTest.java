@@ -17,7 +17,7 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig{maxInboundMessageSize=4194304, maxInboundMetadataSize=8192,"
                     + " hostPort='a', testProtoFile='b', libFolder='c', fullMethod='d', tls=true,"
                     + " caPemPath='null', clientCertPemPath='null', clientKeyPemPath='null',"
-                    + " awaitTerminationTimeout=1000}");
+                    + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=1000}");
     }
 
     @Test
