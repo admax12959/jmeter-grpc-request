@@ -266,7 +266,8 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig.GrpcRequestConfigBuilder(maxInboundMessageSize=1000,"
                         + " maxInboundMetadataSize=1000, hostPort=a, protoFolder=b, libFolder=c,"
                         + " fullMethod=d, tls=true, tlsDisableVerification=true, caPemPath=null,"
-                        + " clientCertPemPath=null, clientKeyPemPath=null, awaitTerminationTimeout=1000)");
+                        + " clientCertPemPath=null, clientKeyPemPath=null, protoContent=null,"
+                        + " libContentZipBase64=null, awaitTerminationTimeout=1000)");
     }
 
     @Test
