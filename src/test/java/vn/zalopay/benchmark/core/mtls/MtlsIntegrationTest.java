@@ -203,6 +203,8 @@ public class MtlsIntegrationTest {
                             .fullMethod("echo.EchoService/Echo")
                             .tls(true)
                             .awaitTerminationTimeout(5000)
+                            .maxInboundMessageSize(4194304)
+                            .maxInboundMetadataSize(8192)
                             .caPemPath(pem)
                             .clientCertPemPath(pem)
                             .clientKeyPemPath(serverKey.getAbsolutePath())
