@@ -49,8 +49,9 @@ public final class GrpcMethodListLoader {
             @Override
             protected void done() {
                 try {
+                    if (isCancelled()) return;
                     callback.onSuccess(get());
-                } catch (InterruptedException | ExecutionException e) {
+                } catch (InterruptedException | ExecutionException | java.util.concurrent.CancellationException e) {
                     log.error("Error loading gRPC methods", e);
                     callback.onError(e.getCause() != null ? e.getCause() : e);
                 }

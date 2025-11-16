@@ -6,6 +6,9 @@ import org.testng.annotations.Test;
 public class MetadataEditorDialogTest {
     @Test
     public void binKeyGetsBase64Encoded() {
+        if (java.awt.GraphicsEnvironment.isHeadless()) {
+            throw new org.testng.SkipException("Headless");
+        }
         MetadataEditorDialog dialog = new MetadataEditorDialog(null);
         dialog.loadFromString("{\"token-bin\":\"plain\"}");
         String out = dialog.toJsonString();
@@ -14,4 +17,3 @@ public class MetadataEditorDialogTest {
         Assert.assertTrue(out.contains("cGxhaW4="));
     }
 }
-
