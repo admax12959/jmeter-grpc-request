@@ -36,6 +36,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
+        grpcSampler.threadFinished();
         String responseData = new String(sampleResult.getResponseData());
         Assert.assertEquals(sampleResult.getResponseCode(), "200");
         Assert.assertTrue(
@@ -87,6 +88,7 @@ public class GrpcSamplerTest extends BaseTest {
                 String.format(
                         "Actual: [%s] %n Expected: [%s]",
                         responseData3, "\"theme\": \"Hello server"));
+        grpcSampler.threadFinished();
     }
 
     @Test
@@ -135,7 +137,7 @@ public class GrpcSamplerTest extends BaseTest {
         SampleResult sampleResult = grpcSampler.sample(null);
         grpcSampler.threadFinished();
         grpcSampler.clear();
-        Assert.assertEquals(sampleResult.getResponseCode(), " 500");
+        Assert.assertEquals(sampleResult.getResponseCode(), "500");
         Assert.assertTrue(
                 sampleResult.getResponseMessage().contains("4 DEADLINE_EXCEEDED"),
                 String.format(
@@ -176,12 +178,12 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.threadFinished();
         grpcSampler.clear();
         String responseData = new String(sampleResult.getResponseData());
-        Assert.assertEquals(sampleResult.getResponseCode(), " 500");
+        Assert.assertEquals(sampleResult.getResponseCode(), "500");
         Assert.assertTrue(
-                responseData.contains(" The stack trace is null"),
+                responseData.contains("The stack trace is null"),
                 String.format(
-                        "Actual: [%s] %n Expected: [%s]",
-                        responseData, " The stack trace is null"));
+                        "Actual: [%s] %n Expected to contain: [%s]",
+                        responseData, "The stack trace is null"));
     }
 
     @Test
@@ -202,7 +204,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.setRequestJson(REQUEST_JSON);
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
-        Assert.assertEquals(sampleResult.getResponseCode(), " 400");
+        Assert.assertEquals(sampleResult.getResponseCode(), "400");
         Assert.assertEquals(
                 sampleResult.getResponseMessage(), GrpcSamplerConstant.CLIENT_EXCEPTION_MSG);
         String responseData = new String(sampleResult.getResponseData());
@@ -236,7 +238,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.threadStarted();
         SampleResult sampleResult = grpcSampler.sample(null);
         String responseData = new String(sampleResult.getResponseData());
-        Assert.assertEquals(sampleResult.getResponseCode(), " 400");
+        Assert.assertEquals(sampleResult.getResponseCode(), "400");
         Assert.assertEquals(
                 sampleResult.getResponseMessage(), GrpcSamplerConstant.CLIENT_EXCEPTION_MSG);
         Assert.assertTrue(
@@ -298,6 +300,7 @@ public class GrpcSamplerTest extends BaseTest {
         grpcSampler.testEnded("Test End");
 
         SampleResult sampleResult = grpcSampler.sample(null);
+        grpcSampler.threadFinished();
         String responseData = new String(sampleResult.getResponseData());
         Assert.assertEquals(sampleResult.getResponseCode(), "200");
         Assert.assertTrue(

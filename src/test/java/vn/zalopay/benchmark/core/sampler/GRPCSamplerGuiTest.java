@@ -9,7 +9,9 @@ import org.apache.jmeter.visualizers.RenderAsText;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.testng.SkipException;
 
 import vn.zalopay.benchmark.GRPCSampler;
 import vn.zalopay.benchmark.GRPCSamplerGui;
@@ -26,6 +28,12 @@ import java.util.UUID;
 import javax.swing.*;
 
 public class GRPCSamplerGuiTest extends BaseTest {
+    @BeforeClass
+    public void skipOnHeadless() {
+        if (GraphicsEnvironment.isHeadless()) {
+            throw new SkipException("Headless environment: skipping Swing GUI tests");
+        }
+    }
 
     @Test
     public void testCanShowGui() {
@@ -1320,7 +1328,7 @@ public class GRPCSamplerGuiTest extends BaseTest {
 
         // set result
         viewResultsFullVisualizerGui.add(sampleResult);
-        Assert.assertEquals(sampleResult.getResponseCode(), " 400");
+        Assert.assertEquals(sampleResult.getResponseCode(), "400");
         Assert.assertEquals(
                 sampleResult.getResponseMessage(), GrpcSamplerConstant.CLIENT_EXCEPTION_MSG);
         Assert.assertTrue(
@@ -1330,6 +1338,7 @@ public class GRPCSamplerGuiTest extends BaseTest {
                                         + " -> invalid.proto"));
 
         // GUI observation: Destruction of the view
+        grpcSampler.threadFinished();
         frame.dispose();
     }
 }

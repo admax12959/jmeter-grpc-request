@@ -15,7 +15,12 @@ public class GrpcRequestConfig {
     private String libFolder;
     private String fullMethod;
     private boolean tls;
+    // Deprecated: disable verification is not supported anymore (kept for compatibility only)
     private boolean tlsDisableVerification;
+    // TLS/mTLS (PEM only)
+    private String caPemPath; // Trusted CA or server certificate (PEM)
+    private String clientCertPemPath; // Client certificate chain (PEM)
+    private String clientKeyPemPath; // Client private key (PKCS#8 PEM)
     private int awaitTerminationTimeout = 5000;
 
     public GrpcRequestConfig() {}
@@ -35,6 +40,27 @@ public class GrpcRequestConfig {
         this.tls = tls;
         this.tlsDisableVerification = tlsDisableVerification;
         this.awaitTerminationTimeout = awaitTerminationTimeout;
+    }
+
+    public GrpcRequestConfig(
+            String hostPort,
+            String testProtoFile,
+            String libFolder,
+            String fullMethod,
+            boolean tls,
+            int awaitTerminationTimeout,
+            String caPemPath,
+            String clientCertPemPath,
+            String clientKeyPemPath) {
+        this.hostPort = hostPort;
+        this.protoFolder = testProtoFile;
+        this.libFolder = libFolder;
+        this.fullMethod = fullMethod;
+        this.tls = tls;
+        this.awaitTerminationTimeout = awaitTerminationTimeout;
+        this.caPemPath = caPemPath;
+        this.clientCertPemPath = clientCertPemPath;
+        this.clientKeyPemPath = clientKeyPemPath;
     }
 
     public String getHostPort() {
@@ -94,8 +120,15 @@ public class GrpcRequestConfig {
                 + '\''
                 + ", tls="
                 + tls
-                + ", tlsDisableVerification="
-                + tlsDisableVerification
+                + ", caPemPath='"
+                + caPemPath
+                + '\''
+                + ", clientCertPemPath='"
+                + clientCertPemPath
+                + '\''
+                + ", clientKeyPemPath='"
+                + clientKeyPemPath
+                + '\''
                 + ", awaitTerminationTimeout="
                 + awaitTerminationTimeout
                 + '}';

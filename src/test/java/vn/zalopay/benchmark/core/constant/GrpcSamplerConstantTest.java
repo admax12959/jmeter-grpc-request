@@ -25,7 +25,7 @@ public class GrpcSamplerConstantTest {
     public void testCanGetConstantErrorMessage() {
         Assert.assertEquals(
                 GrpcSamplerConstant.CLIENT_EXCEPTION_MSG,
-                " GRPCSampler parsing exception: An unknown exception occurred before the GRPC"
+                "GRPCSampler parsing exception: An unknown exception occurred before the GRPC"
                         + " request was initiated, See response body for the stack trace.");
     }
 }

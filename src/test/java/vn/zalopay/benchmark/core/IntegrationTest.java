@@ -19,6 +19,7 @@ import org.apache.jmeter.threads.ThreadGroup;
 import org.apache.jmeter.threads.gui.ThreadGroupGui;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
+import org.apache.jorphan.collections.ListedHashTree;
 import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
@@ -45,8 +46,8 @@ public class IntegrationTest extends BaseTest {
         JMeterUtils.setProperty("jmeterengine.force.system.exit", "false");
         JMeterUtils.setProperty("DEBUG", "true");
         StandardJMeterEngine jmeter = new StandardJMeterEngine();
-        // JMeter Test Plan, basically JOrphan HashTree
-        HashTree testPlanTree = new HashTree();
+        // JMeter Test Plan, use ListedHashTree in JMeter 5.6+
+        ListedHashTree testPlanTree = new ListedHashTree();
         // Loop Controller
         LoopController loopController = new LoopController();
         loopController.setLoops(2);
@@ -80,7 +81,7 @@ public class IntegrationTest extends BaseTest {
         // add Summarizer output to get test progress in stdout like:
         // Store execution results into a .jtl file
         IntegrationTestResultCollector testResult = new IntegrationTestResultCollector();
-        testPlanTree.add(testPlanTree.getArray()[0], new Object[] {testResult});
+        testPlanTree.add(testPlan, testResult);
 
         // Run Test Plan
         jmeter.configure(testPlanTree);

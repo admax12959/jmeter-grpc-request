@@ -43,6 +43,8 @@
 
 **jmeter-grpc-request** 插件的 `jar` 包，可以从 [Releases Page](https://github.com/zalopay-oss/jmeter-grpc-request/releases) 获得，也可以 在 [JMeter Plugins Manager](https://jmeter-plugins.org/?search=jmeter-grpc-request) 中找到
 
+注意：禁用 SSL/TLS 证书校验仅适用于开发与测试场景，生产环境请配置可信证书与信任库。
+
 ### 使用 JMeter 发出 gRPC 请求
 创建测试脚本：
 
@@ -66,7 +68,7 @@
 | 5		| Proto Root Directory					| proto文件的根路径																																																			|
 | 6		| Library Directory (Optional)			| proto文件解析需要依赖的额外库的文件夹路径 (googleapis)																																									|
 | 7		| Full Method							| 用于请求测试的RPC方法																																																		|
-| 8		| Metadata								| Metadata可以用于token身份验证等方式，支持以下两种方式传输（UTF-8）：<br/>1. 使用键值对（Key: Value）：<br/>&nbsp; - key1: value1, key2: value2<br/>2. 使用 JSON String：<br/>&nbsp; - {"key1":"Value1", "key2":"value2"}	|
+| 8		| Metadata								| Metadata可以用于token身份验证等方式，支持以下两种方式传输（UTF-8）：<br/>1. 使用键值对（Key: Value）：<br/>&nbsp; - key1: value1, key2: value2<br/>2. 使用 JSON String：<br/>&nbsp; - {"key1":"Value1", "key2":"value2"}<br/><br/>说明：支持以 <code>-bin</code> 结尾的二进制 Metadata 键；值建议使用 Base64 编码（若非 Base64，则按 UTF-8 字节处理）。	|
 | 9		| Deadline								| 请求超时时间（单位：毫秒）																																																|
 | 10		| Send JSON Format With the Request		| 格式化的JSON请求数据																																																		|
 

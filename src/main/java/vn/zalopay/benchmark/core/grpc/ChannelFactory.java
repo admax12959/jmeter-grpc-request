@@ -3,22 +3,25 @@ package vn.zalopay.benchmark.core.grpc;
 import com.google.common.net.HostAndPort;
 
 import io.grpc.*;
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NegotiationType;
-import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.ApplicationProtocolConfig;
-import io.netty.handler.ssl.ApplicationProtocolNames;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.grpc.Grpc;
+import io.grpc.InsecureChannelCredentials;
+import io.grpc.TlsChannelCredentials;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import vn.zalopay.benchmark.core.config.GrpcSecurityConfig;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.Map;
 
-import javax.net.ssl.SSLException;
-
-/** Knows how to construct grpc channels. */
+/** Knows how to construct grpc channels using the Credentials API. */
 public class ChannelFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChannelFactory.class);
 
@@ -30,79 +33,51 @@ public class ChannelFactory {
 
     public ManagedChannel createChannel(
             HostAndPort endpoint,
-            boolean tls,
-            boolean disableTlsVerification,
+            GrpcSecurityConfig security,
             Map<String, String> metadataHash,
             int maxInboundMessageSize,
             int maxInboundMetadataSize) {
-        NettyChannelBuilder managedChannelBuilder =
-                createChannelBuilder(endpoint, tls, disableTlsVerification, metadataHash);
-        managedChannelBuilder.maxInboundMessageSize(maxInboundMessageSize);
-        managedChannelBuilder.maxInboundMetadataSize(maxInboundMetadataSize);
-        return managedChannelBuilder.build();
+        ManagedChannelBuilder<?> builder = createChannelBuilder(endpoint, security);
+        builder.maxInboundMessageSize(maxInboundMessageSize);
+        builder.maxInboundMetadataSize(maxInboundMetadataSize);
+        builder.intercept(metadataInterceptor(metadataHash));
+        return builder.build();
     }
 
-    private NettyChannelBuilder createChannelBuilder(
-            HostAndPort endpoint,
-            boolean tls,
-            boolean disableTlsVerification,
-            Map<String, String> metadataHash) {
-        if (!tls) {
-            return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort())
-                    .negotiationType(NegotiationType.PLAINTEXT)
-                    .intercept(metadataInterceptor(metadataHash));
+    private ManagedChannelBuilder<?> createChannelBuilder(
+            HostAndPort endpoint, GrpcSecurityConfig security) {
+        if (security == null || !security.isTls()) {
+            return Grpc.newChannelBuilderForAddress(
+                    endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
         }
-        return createSSLMessageChannel(endpoint, disableTlsVerification, metadataHash);
+        TlsChannelCredentials creds = buildTlsCredentials(security);
+        return Grpc.newChannelBuilderForAddress(endpoint.getHost(), endpoint.getPort(), creds);
     }
 
-    private NettyChannelBuilder createSSLMessageChannel(
-            HostAndPort endpoint,
-            boolean disableTlsVerification,
-            Map<String, String> metadataHash) {
-        return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort())
-                .negotiationType(NegotiationType.TLS)
-                .sslContext(createSslContext(disableTlsVerification))
-                .intercept(metadataInterceptor(metadataHash));
-    }
-
-    private SslContext createSslContext(boolean disableTlsVerification) {
+    private TlsChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {
         try {
-            io.netty.handler.ssl.SslContextBuilder grpcSslContexts = GrpcSslContexts.forClient();
-            if (disableTlsVerification) {
-                grpcSslContexts.trustManager(InsecureTrustManagerFactory.INSTANCE);
+            TlsChannelCredentials.Builder builder = TlsChannelCredentials.newBuilder();
+            if (notBlank(security.getCaPemPath())) {
+                builder = builder.trustManager(readAll(security.getCaPemPath()));
             }
-            return createSSlContext(grpcSslContexts);
-        } catch (SSLException e) {
-            LOGGER.error("Error in create SslContext {}", e.getMessage());
+            if (notBlank(security.getClientCertPemPath()) && notBlank(security.getClientKeyPemPath())) {
+                builder = builder.keyManager(
+                        readAll(security.getClientCertPemPath()), readAll(security.getClientKeyPemPath()));
+            }
+            return builder.build();
+        } catch (IOException e) {
+            LOGGER.error("Error in create TLS credentials: {}", e.getMessage());
             throw new RuntimeException("Error in create SSL connection!", e);
         }
     }
 
-    private SslContext createSSlContext(io.netty.handler.ssl.SslContextBuilder grpcSslContexts)
-            throws SSLException {
-        try {
-            LOGGER.debug("Create SslContext with NPN_AND_ALPN");
-            return grpcSslContexts
-                    .applicationProtocolConfig(
-                            new ApplicationProtocolConfig(
-                                    ApplicationProtocolConfig.Protocol.NPN_AND_ALPN,
-                                    ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                                    ApplicationProtocolConfig.SelectedListenerFailureBehavior
-                                            .ACCEPT,
-                                    ApplicationProtocolNames.HTTP_2))
-                    .build();
-        } catch (UnsupportedOperationException e) {
-            LOGGER.warn("Error in create SslContext with NPN_AND_ALPN {}", e.getMessage());
-            return grpcSslContexts
-                    .applicationProtocolConfig(
-                            new ApplicationProtocolConfig(
-                                    ApplicationProtocolConfig.Protocol.ALPN,
-                                    ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                                    ApplicationProtocolConfig.SelectedListenerFailureBehavior
-                                            .ACCEPT,
-                                    ApplicationProtocolNames.HTTP_2))
-                    .build();
-        }
+    private InputStream readAll(String path) throws IOException {
+        Path p = Paths.get(path);
+        return Files.newInputStream(p);
+    }
+
+    private boolean notBlank(String s) {
+        return s != null && !s.trim().isEmpty();
     }
 
     private ClientInterceptor metadataInterceptor(Map<String, String> metadataHash) {
@@ -118,10 +93,23 @@ public class ChannelFactory {
                     protected void checkedStart(
                             Listener<RespT> responseListener, Metadata headers) {
                         for (Map.Entry<String, String> entry : metadataHash.entrySet()) {
-                            Metadata.Key<String> key =
-                                    Metadata.Key.of(
-                                            entry.getKey(), Metadata.ASCII_STRING_MARSHALLER);
-                            headers.put(key, entry.getValue());
+                            String k = entry.getKey();
+                            String v = entry.getValue();
+                            if (k != null && k.endsWith("-bin")) {
+                                Metadata.Key<byte[]> key =
+                                        Metadata.Key.of(k, Metadata.BINARY_BYTE_MARSHALLER);
+                                byte[] bytes;
+                                try {
+                                    bytes = Base64.getDecoder().decode(v);
+                                } catch (IllegalArgumentException ex) {
+                                    bytes = v == null ? new byte[0] : v.getBytes(StandardCharsets.UTF_8);
+                                }
+                                headers.put(key, bytes);
+                            } else {
+                                Metadata.Key<String> key =
+                                        Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER);
+                                headers.put(key, v);
+                            }
                         }
                         delegate().start(responseListener, headers);
                     }

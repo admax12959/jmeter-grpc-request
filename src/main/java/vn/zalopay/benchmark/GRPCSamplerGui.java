@@ -65,7 +65,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
     private JLabeledTextField maxInboundMetadataSize;
 
     private JCheckBox isTLSCheckBox;
-    private JCheckBox isTLSDisableVerificationCheckBox;
+    private JLabeledTextField caPemField;
+    private JLabeledTextField clientCertPemField;
+    private JLabeledTextField clientKeyPemField;
 
     private JSyntaxTextArea requestJsonArea;
 
@@ -107,7 +109,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         grpcSampler.setFullMethod(this.fullMethodField.getSelectedItem().toString());
         grpcSampler.setDeadline(this.deadlineField.getText());
         grpcSampler.setTls(this.isTLSCheckBox.isSelected());
-        grpcSampler.setTlsDisableVerification(this.isTLSDisableVerificationCheckBox.isSelected());
+        grpcSampler.setTlsCaPemPath(this.caPemField.getText());
+        grpcSampler.setTlsClientCertPemPath(this.clientCertPemField.getText());
+        grpcSampler.setTlsClientKeyPemPath(this.clientKeyPemField.getText());
         grpcSampler.setChannelShutdownAwaitTime(this.channelFactoryShutdownTimeField.getText());
         grpcSampler.setChannelMaxInboundMessageSize(this.maxInboundMessageSize.getText());
         grpcSampler.setChannelMaxInboundMetadataSize(this.maxInboundMetadataSize.getText());
@@ -129,7 +133,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         fullMethodField.setSelectedItem(grpcSampler.getFullMethod());
         deadlineField.setText(grpcSampler.getDeadline());
         isTLSCheckBox.setSelected(grpcSampler.isTls());
-        isTLSDisableVerificationCheckBox.setSelected(grpcSampler.isTlsDisableVerification());
+        caPemField.setText(grpcSampler.getTlsCaPemPath());
+        clientCertPemField.setText(grpcSampler.getTlsClientCertPemPath());
+        clientKeyPemField.setText(grpcSampler.getTlsClientKeyPemPath());
         channelFactoryShutdownTimeField.setText(
                 Integer.toString(grpcSampler.getChannelShutdownAwaitTime()));
         maxInboundMessageSize.setText(
@@ -154,7 +160,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         fullMethodField.setSelectedItem("");
         deadlineField.setText("1000");
         isTLSCheckBox.setSelected(false);
-        isTLSDisableVerificationCheckBox.setSelected(false);
+        caPemField.setText("");
+        clientCertPemField.setText("");
+        clientKeyPemField.setText("");
         channelFactoryShutdownTimeField.setText("1000");
         maxInboundMessageSize.setText("4194304");
         maxInboundMetadataSize.setText("8192");
@@ -192,7 +200,9 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         portField = new JLabeledTextField("Port Number:", 3); // $NON-NLS-1$
         hostField = new JLabeledTextField("Server Name or IP:", 11); // $NON-NLS-1$
         isTLSCheckBox = new JCheckBox("SSL/TLS");
-        isTLSDisableVerificationCheckBox = new JCheckBox("Disable SSL/TLS Cert Verification");
+        caPemField = new JLabeledTextField("CA PEM Path:", 24);
+        clientCertPemField = new JLabeledTextField("Client Cert PEM Path:", 24);
+        clientKeyPemField = new JLabeledTextField("Client Key PEM Path:", 24);
         JPanel webServerPanel = new VerticalPanel();
         webServerPanel.setBorder(BorderFactory.createTitledBorder("Web Server")); // $NON-NLS-1$
 
@@ -202,9 +212,13 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
         JPanel webserverOtherPanel = new HorizontalPanel();
         webserverOtherPanel.add(isTLSCheckBox);
-        webserverOtherPanel.add(isTLSDisableVerificationCheckBox);
         webServerPanel.add(webserverHostPanel);
         webServerPanel.add(webserverOtherPanel);
+        JPanel tlsPemPanel = new VerticalPanel();
+        tlsPemPanel.add(caPemField);
+        tlsPemPanel.add(clientCertPemField);
+        tlsPemPanel.add(clientKeyPemField);
+        webServerPanel.add(tlsPemPanel);
         return webServerPanel;
     }
 

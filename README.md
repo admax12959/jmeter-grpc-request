@@ -23,6 +23,8 @@ Same as JMeter HTTP Request but for gRPC. Copy only once file jar to lib/ext of 
 
 *The JMeter gRPC Request is available at JMeter Plugins Manager, we can find here https://jmeter-plugins.org/?search=jmeter-grpc-request*
 
+Warning: Disabling SSL/TLS certificate verification is intended for development and testing only. Always use proper trust stores in production.
+
 ## Features
 
 - Supports Blocking Unary Calls.
@@ -74,7 +76,7 @@ Run test:
 | 5   	| Proto Root Directory              	| Root directory contains proto files                                 	|
 | 6   	| Library Directory (Optional)      	| Using a different underlying library (googleapis)                   	|
 | 7   	| Full Method                       	| Full Method to test                                                 	|
-| 8   	| Metadata                          	| Metadata can be use for Store token, authentication method, etc. <br/>Two Ways to use metadata, <br/><br/> &nbsp;<b>1. Comma separated Key:Value : </b><br/>&nbsp; - key1:value1,key2:value2<br/>&nbsp; - Value should url encode with utf-8 <br/><br/>&nbsp;2.<b> Json String : </b><br/>&nbsp;&nbsp; - {"key1":"Value1", "key2":"value2"} <br/><br/> <b>Note: <i>In gRPC Metadata value is (Key, value) both in format of (String, String), in case of nested Json Objects values, will go to request as a JsonString. </i></b>                              	|
+| 8   	| Metadata                          	| Metadata can be used to store token, authentication method, etc. <br/>Two ways to use metadata: <br/><br/> &nbsp;<b>1. Comma separated Key:Value:</b><br/>&nbsp; - key1:value1,key2:value2<br/>&nbsp; - Values should be URL-encoded with UTF-8 <br/><br/>&nbsp;<b>2. JSON String:</b><br/>&nbsp;&nbsp; - {"key1":"Value1", "key2":"value2"} <br/><br/> <b>Notes:</b><br/> - In gRPC, metadata values are (String, String). Nested JSON objects will be sent as JSON strings.<br/> - Binary metadata keys ending with <code>-bin</code> are supported; values should be Base64-encoded (fallback to UTF-8 bytes if not Base64).                              	|
 | 9   	| Deadline                          	| How long gRPC clients are willing to wait for an RPC to complete  	|
 | 10   	| Send JSON Format With the Request 	| Data request with JSON format                                       	|
 

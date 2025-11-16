@@ -34,7 +34,11 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public static final String REQUEST_JSON = "GRPCSampler.requestJson";
     public static final String DEADLINE = "GRPCSampler.deadline";
     public static final String TLS = "GRPCSampler.tls";
+    // Deprecated: disable verification is not supported anymore (kept for backward compatibility of saved test plans)
     public static final String TLS_DISABLE_VERIFICATION = "GRPCSampler.tlsDisableVerification";
+    public static final String TLS_CA_PEM_PATH = "GRPCSampler.tls.caPemPath";
+    public static final String TLS_CLIENT_CERT_PEM_PATH = "GRPCSampler.tls.clientCertPemPath";
+    public static final String TLS_CLIENT_KEY_PEM_PATH = "GRPCSampler.tls.clientKeyPemPath";
     public static final String CHANNEL_SHUTDOWN_AWAIT_TIME = "GRPCSampler.channelAwaitTermination";
     public static final String CHANNEL_MAX_INBOUND_MESSAGE_SIZE =
             "GRPCSampler" + ".maxInboundMessageSize";
@@ -69,7 +73,9 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
                             .libFolder(getLibFolder())
                             .fullMethod(getFullMethod())
                             .tls(isTls())
-                            .tlsDisableVerification(isTlsDisableVerification())
+                            .caPemPath(getTlsCaPemPath())
+                            .clientCertPemPath(getTlsClientCertPemPath())
+                            .clientKeyPemPath(getTlsClientKeyPemPath())
                             .awaitTerminationTimeout(getChannelShutdownAwaitTime())
                             .maxInboundMessageSize(getChannelMaxInboundMessageSize())
                             .maxInboundMetadataSize(getChannelMaxInboundMetadataSize())
@@ -141,7 +147,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
 
     private void generateErrorResultInInitGRPCRequest(SampleResult sampleResult, Exception e) {
         sampleResult.setSuccessful(false);
-        sampleResult.setResponseCode(" 400");
+        sampleResult.setResponseCode("400");
         sampleResult.setDataType(SampleResult.TEXT);
         sampleResult.setResponseMessage(GrpcSamplerConstant.CLIENT_EXCEPTION_MSG);
         sampleResult.setResponseData(ExceptionUtils.getPrintExceptionToStr(e, null), "UTF-8");
@@ -161,7 +167,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     private void generateSuccessResult(GrpcResponse grpcResponse, SampleResult sampleResult) {
         sampleResult.setSuccessful(true);
         sampleResult.setResponseCodeOK();
-        sampleResult.setResponseMessage(" success");
+        sampleResult.setResponseMessage("success");
         sampleResult.setResponseData(
                 grpcResponse.getGrpcMessageString().getBytes(StandardCharsets.UTF_8));
     }
@@ -169,7 +175,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     private void generateErrorResult(GrpcResponse grpcResponse, SampleResult sampleResult) {
         Throwable throwable = grpcResponse.getThrowable();
         sampleResult.setSuccessful(false);
-        sampleResult.setResponseCode(" 500");
+        sampleResult.setResponseCode("500");
         boolean isRuntimeException = throwable instanceof StatusRuntimeException;
         if (isRuntimeException) {
             generateStatusRuntimeExceptionResponseData(sampleResult, throwable);
@@ -180,7 +186,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
 
     private void generateStatusRuntimeExceptionResponseData(
             SampleResult sampleResult, Throwable throwable) {
-        String responseMessage = " ";
+        String responseMessage = "";
         String responseData = "";
         Status status = ((StatusRuntimeException) throwable).getStatus();
         Status.Code code = status.getCode();
@@ -192,7 +198,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
 
     private void generateExceptionInInvokeSendGrpcResponseData(
             SampleResult sampleResult, Throwable throwable) {
-        String responseMessage = " ";
+        String responseMessage = "";
         responseMessage += ExceptionUtils.getPrintExceptionToStr(throwable, 0);
         sampleResult.setResponseMessage(responseMessage);
         sampleResult.setResponseData(responseMessage, "UTF-8");
@@ -264,13 +270,9 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
         setProperty(TLS, tls);
     }
 
-    public boolean isTlsDisableVerification() {
-        return getPropertyAsBoolean(TLS_DISABLE_VERIFICATION);
-    }
-
-    public void setTlsDisableVerification(boolean tlsDisableVerification) {
-        setProperty(TLS_DISABLE_VERIFICATION, tlsDisableVerification);
-    }
+    // Deprecated no-op API to keep backward compatibility of test code and saved JMX
+    public boolean isTlsDisableVerification() { return false; }
+    public void setTlsDisableVerification(boolean tlsDisableVerification) { /* no-op */ }
 
     public String getHost() {
         return getPropertyAsString(HOST);
@@ -311,6 +313,13 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public void setChannelMaxInboundMetadataSize(String channelMaxInboundMetadataSize) {
         setProperty(CHANNEL_MAX_INBOUND_METADATA_SIZE, channelMaxInboundMetadataSize);
     }
+
+    public String getTlsCaPemPath() { return getPropertyAsString(TLS_CA_PEM_PATH); }
+    public void setTlsCaPemPath(String v) { setProperty(TLS_CA_PEM_PATH, v); }
+    public String getTlsClientCertPemPath() { return getPropertyAsString(TLS_CLIENT_CERT_PEM_PATH); }
+    public void setTlsClientCertPemPath(String v) { setProperty(TLS_CLIENT_CERT_PEM_PATH, v); }
+    public String getTlsClientKeyPemPath() { return getPropertyAsString(TLS_CLIENT_KEY_PEM_PATH); }
+    public void setTlsClientKeyPemPath(String v) { setProperty(TLS_CLIENT_KEY_PEM_PATH, v); }
 
     private String getHostPort() {
         return getHost() + ":" + getPort();

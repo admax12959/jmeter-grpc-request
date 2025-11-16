@@ -176,7 +176,7 @@ public class ClientCallerTest extends BaseTest {
         Assert.assertTrue(resp.getGrpcMessageString().contains("\"theme\": \"Hello server"));
     }
 
-    @Test
+    @Test(expectedExceptions = UnsupportedOperationException.class)
     public void
             testCanSendGrpcUnaryRequestWithSSLAndEnableSSLVerificationAndErrorUnsupportedOperationException() {
         try (MockedConstruction<ApplicationProtocolConfig>
@@ -217,10 +217,7 @@ public class ClientCallerTest extends BaseTest {
                             DEFAULT_CHANNEL_SHUTDOWN_TIME);
             clientCaller = new ClientCaller(grpcRequestConfig);
             clientCaller.buildRequestAndMetadata(REQUEST_JSON, METADATA);
-            GrpcResponse resp = clientCaller.call("10000");
-            clientCaller.shutdownNettyChannel();
-            Assert.assertNotNull(resp);
-            Assert.assertTrue(resp.getGrpcMessageString().contains("\"theme\": \"Hello server"));
+            clientCaller.call("10000");
         }
     }
 

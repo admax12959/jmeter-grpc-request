@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ClientCaller {
+public class ClientCaller implements AutoCloseable {
     private Descriptors.MethodDescriptor methodDescriptor;
     private JsonFormat.TypeRegistry registry;
     private DynamicGrpcClient dynamicClient;
@@ -43,7 +43,9 @@ public class ClientCaller {
     private HostAndPort hostAndPort;
     private Map<String, String> metadataMap;
     private boolean tls;
-    private boolean disableTtlVerification;
+    private String caPemPath;
+    private String clientCertPemPath;
+    private String clientKeyPemPath;
     private int awaitTerminationTimeout;
     private final GrpcRequestConfig requestConfig;
     ChannelFactory channelFactory;
@@ -56,7 +58,6 @@ public class ClientCaller {
                 requestConfig.getLibFolder(),
                 requestConfig.getFullMethod(),
                 requestConfig.isTls(),
-                requestConfig.isTlsDisableVerification(),
                 requestConfig.getAwaitTerminationTimeout());
     }
 
@@ -71,7 +72,9 @@ public class ClientCaller {
         try {
             this.awaitTerminationTimeout = awaitTerminationTimeout;
             this.tls = tls;
-            disableTtlVerification = tlsDisableVerification;
+            this.caPemPath = requestConfig.getCaPemPath();
+            this.clientCertPemPath = requestConfig.getClientCertPemPath();
+            this.clientKeyPemPath = requestConfig.getClientKeyPemPath();
             hostAndPort = HostAndPort.fromString(hostPort);
             metadataMap = new LinkedHashMap<>();
             channelFactory = ChannelFactory.create();
@@ -150,11 +153,17 @@ public class ClientCaller {
     }
 
     public void createDynamicClient() {
+        vn.zalopay.benchmark.core.config.GrpcSecurityConfig securityConfig =
+                vn.zalopay.benchmark.core.config.GrpcSecurityConfig.builder()
+                        .tls(tls)
+                        .caPemPath(caPemPath)
+                        .clientCertPemPath(clientCertPemPath)
+                        .clientKeyPemPath(clientKeyPemPath)
+                        .build();
         channel =
                 channelFactory.createChannel(
                         hostAndPort,
-                        tls,
-                        disableTtlVerification,
+                        securityConfig,
                         metadataMap,
                         requestConfig.getMaxInboundMessageSize(),
                         requestConfig.getMaxInboundMetadataSize());
@@ -287,9 +296,15 @@ public class ClientCaller {
         }
     }
 
+    @Override
+    public void close() {
+        shutdownNettyChannel();
+    }
+
     private Long parsingDeadlineTime(String deadlineMs) {
         try {
-            return Long.parseLong(deadlineMs);
+            long v = Long.parseLong(deadlineMs);
+            return Math.max(0L, v);
         } catch (Exception e) {
             throw new RuntimeException("Caught exception while parsing deadline to long", e);
         }
