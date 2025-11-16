@@ -218,8 +218,44 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         tlsPemPanel.add(caPemField);
         tlsPemPanel.add(clientCertPemField);
         tlsPemPanel.add(clientKeyPemField);
+        JButton testConnectionButton = new JButton("Test Connection");
+        testConnectionButton.addActionListener(e -> doTestConnection());
+        tlsPemPanel.add(testConnectionButton);
         webServerPanel.add(tlsPemPanel);
         return webServerPanel;
+    }
+
+    private void doTestConnection() {
+        try {
+            grpcSampler = grpcSampler == null ? new GRPCSampler() : grpcSampler;
+            grpcSampler.setTls(isTLSCheckBox.isSelected());
+            grpcSampler.setTlsCaPemPath(caPemField.getText());
+            grpcSampler.setTlsClientCertPemPath(clientCertPemField.getText());
+            grpcSampler.setTlsClientKeyPemPath(clientKeyPemField.getText());
+            grpcSampler.setHost(hostField.getText());
+            grpcSampler.setPort(portField.getText());
+            grpcSampler.setProtoFolder(protoFolderField.getText());
+            grpcSampler.setLibFolder(libFolderField.getText());
+            vn.zalopay.benchmark.core.config.GrpcRequestConfig cfg =
+                    vn.zalopay.benchmark.core.config.GrpcRequestConfig.builder()
+                            .hostPort(grpcSampler.getHost() + ":" + grpcSampler.getPort())
+                            .protoFolder(grpcSampler.getProtoFolder())
+                            .libFolder(grpcSampler.getLibFolder())
+                            .tls(grpcSampler.isTls())
+                            .caPemPath(grpcSampler.getTlsCaPemPath())
+                            .clientCertPemPath(grpcSampler.getTlsClientCertPemPath())
+                            .clientKeyPemPath(grpcSampler.getTlsClientKeyPemPath())
+                            .build();
+            boolean ok = new vn.zalopay.benchmark.core.ui.ConnectionTester().test(cfg, 2000);
+            JOptionPane.showMessageDialog(
+                    this,
+                    ok ? "Connection OK" : "Connection failed",
+                    "Test Connection",
+                    ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this, ex.getMessage(), "Test Connection", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel getRequestJSONPanel() {
