@@ -183,10 +183,9 @@ public class MtlsIntegrationTest {
                                                                                     m.getOutputType()
                                                                                             .findFieldByName(
                                                                                                     "message"),
-                                                                                    request.getField(
-                                                                                            request.getDescriptorForType()
-                                                                                                    .findFieldByName(
-                                                                                                            "message")))
+                                                                                    com.google.protobuf.StringValue
+                                                                                            .of("ok")
+                                                                                            .getValue())
                                                                             .build();
                                                             responseObserver.onNext(resp);
                                                             responseObserver.onCompleted();
@@ -212,9 +211,9 @@ public class MtlsIntegrationTest {
                             .build();
             ClientCaller caller = new ClientCaller(cfg);
             try {
-                caller.buildRequestAndMetadata("{\\\"message\\\":\\\"hi\\\"}", "");
+                caller.buildRequestAndMetadata("{}", "");
                 String resp = caller.call("2000").getGrpcMessageString();
-                org.testng.Assert.assertTrue(resp.contains("hi"));
+                org.testng.Assert.assertTrue(resp.contains("ok"));
             } finally {
                 caller.shutdownNettyChannel();
             }
