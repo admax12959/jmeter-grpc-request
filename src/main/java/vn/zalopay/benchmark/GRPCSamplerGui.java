@@ -58,6 +58,8 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
     private JComboBox<String> fullMethodField;
     private JButton fullMethodButton;
+    private javax.swing.JProgressBar methodProgressBar;
+    private JButton methodCancelButton;
 
     private JTextField metadataField;
     private JLabeledTextField hostField;
@@ -416,14 +418,14 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         addToPanel(
                 requestPanel, labelConstraints, 0, row, new JLabel("Proto Content:", JLabel.RIGHT));
         protoContentArea = new javax.swing.JTextArea(5, 20);
-        addToPanel(requestPanel, editConstraints, 1, row, new JTextScrollPane(protoContentArea));
+        addToPanel(requestPanel, editConstraints, 1, row, new JScrollPane(protoContentArea));
         row++;
 
         // Inline lib content (base64 zip)
         addToPanel(
                 requestPanel, labelConstraints, 0, row, new JLabel("Lib Content (Base64 ZIP):", JLabel.RIGHT));
         libContentArea = new javax.swing.JTextArea(3, 20);
-        addToPanel(requestPanel, editConstraints, 1, row, new JTextScrollPane(libContentArea));
+        addToPanel(requestPanel, editConstraints, 1, row, new JScrollPane(libContentArea));
         row++;
 
         // Full method
