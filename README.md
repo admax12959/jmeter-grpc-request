@@ -102,6 +102,13 @@ In order to build JMeter GRPC Request from source, you will need:
 - [Java 8](https://www.oracle.com/downloads/index.html)
 - [Apache Maven 3](https://maven.apache.org/)
 
+### TLS and mTLS (PEM only)
+
+- TLS: supply CA/server certificate PEM via UI fields or properties
+- mTLS: additionally provide Client Cert PEM and Client Key PEM (PKCS#8)
+- This plugin uses gRPC Credentials API with grpc-netty-shaded and ALPN/HTTP2.
+- Insecure/disable verification mode has been removed.
+
 ### Build from source
 
 Build a (fat) jar output in target directory, run:
