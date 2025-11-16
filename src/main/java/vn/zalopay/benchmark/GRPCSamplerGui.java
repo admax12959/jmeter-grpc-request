@@ -287,7 +287,20 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                         BorderFactory.createTitledBorder("Optional Configuration")));
 
         JLabel metadataLabel = new JLabel("Metadata:");
-        metadataField = new JTextField("Metadata", 32); // $NON-NLS-1$
+        metadataField = new JTextField("", 32); // $NON-NLS-1$
+        JButton metadataEditButton = new JButton("Edit...");
+        metadataEditButton.addActionListener(
+                e -> {
+                    java.awt.Frame owner =
+                            (java.awt.Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
+                    vn.zalopay.benchmark.core.ui.MetadataEditorDialog dialog =
+                            new vn.zalopay.benchmark.core.ui.MetadataEditorDialog(owner);
+                    dialog.loadFromString(metadataField.getText());
+                    dialog.setVisible(true);
+                    if (dialog.isOk()) {
+                        metadataField.setText(dialog.toJsonString());
+                    }
+                });
         deadlineField = new JLabeledTextField("Deadline In Millisecond:", 7); // $NON-NLS-1$
         channelFactoryShutdownTimeField =
                 new JLabeledTextField("Channel Await Termination In Millisecond:", 5);
@@ -299,6 +312,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
         metadataServerPanel.add(metadataLabel);
         metadataServerPanel.add(metadataField);
+        metadataServerPanel.add(metadataEditButton);
 
         JPanel timeOutOptionServerPanel = new HorizontalPanel();
         timeOutOptionServerPanel.add(deadlineField);
