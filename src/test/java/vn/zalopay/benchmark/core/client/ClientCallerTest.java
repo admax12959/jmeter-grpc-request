@@ -7,10 +7,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 
 import io.grpc.StatusRuntimeException;
-import io.grpc.netty.GrpcSslContexts;
-import io.netty.handler.ssl.ApplicationProtocolConfig;
-import io.netty.handler.ssl.ApplicationProtocolNames;
-import io.netty.handler.ssl.SslContextBuilder;
 
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -184,48 +180,25 @@ public class ClientCallerTest extends BaseTest {
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void
-            testCanSendGrpcUnaryRequestWithSSLAndEnableSSLVerificationAndErrorUnsupportedOperationException() {
-        try (MockedConstruction<ApplicationProtocolConfig>
-                applicationProtocolConfigMockedConstruction =
-                        mockConstructionWithAnswer(
-                                ApplicationProtocolConfig.class,
-                                (invocation) -> {
-                                    // Simulate JDK not supported ALPN
-                                    if (countMockFailedALPN == 0) {
-                                        countMockFailedALPN++;
-                                        throw new UnsupportedOperationException(
-                                                "Dummy UnsupportedOperationException");
-                                    }
-                                    switch (invocation.getMethod().getName()) {
-                                        case "protocol":
-                                            return ApplicationProtocolConfig.Protocol.ALPN;
-                                        case "selectorFailureBehavior":
-                                            return ApplicationProtocolConfig.SelectorFailureBehavior
-                                                    .NO_ADVERTISE;
-                                        case "selectedListenerFailureBehavior":
-                                            return ApplicationProtocolConfig
-                                                    .SelectedListenerFailureBehavior.ACCEPT;
-                                        case "supportedProtocols":
-                                            return Arrays.asList(ApplicationProtocolNames.HTTP_2);
-                                        default:
-                                            throw new UnsupportedOperationException(
-                                                    "Dummy UnsupportedOperationException");
-                                    }
-                                })) {
-            GrpcRequestConfig grpcRequestConfig =
-                    new GrpcRequestConfig(
-                            HOST_PORT_TLS,
-                            PROTO_WITH_EXTERNAL_IMPORT_FOLDER.toString(),
-                            LIB_FOLDER.toString(),
-                            FULL_METHOD,
-                            true,
-                            false,
-                            DEFAULT_CHANNEL_SHUTDOWN_TIME);
-            clientCaller = new ClientCaller(grpcRequestConfig);
-            clientCaller.buildRequestAndMetadata(REQUEST_JSON, METADATA);
-            clientCaller.call("10000");
-        }
+    public void testCanSendGrpcUnaryRequestWithSSLAndEnableSSLVerification() {
+        GrpcRequestConfig grpcRequestConfig =
+                new GrpcRequestConfig(
+                        HOST_PORT_TLS,
+                        PROTO_WITH_EXTERNAL_IMPORT_FOLDER.toString(),
+                        LIB_FOLDER.toString(),
+                        FULL_METHOD,
+                        true,
+                        DEFAULT_CHANNEL_SHUTDOWN_TIME,
+                        Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.crt")
+                                .toString(),
+                        null,
+                        null);
+        clientCaller = new ClientCaller(grpcRequestConfig);
+        clientCaller.buildRequestAndMetadata(REQUEST_JSON, METADATA);
+        GrpcResponse resp = clientCaller.call("10000");
+        clientCaller.shutdownNettyChannel();
+        Assert.assertNotNull(resp);
+        Assert.assertTrue(resp.getGrpcMessageString().contains("\"theme\": \"Hello server"));
     }
 
     @Test(
@@ -306,22 +279,7 @@ public class ClientCallerTest extends BaseTest {
     @Test(
             expectedExceptions = RuntimeException.class,
             expectedExceptionsMessageRegExp = "Error in create SSL connection!")
-    public void testCanThrowExceptionWithSSLException() {
-        MockedStatic<io.grpc.netty.GrpcSslContexts> grpcSslContextBuilder =
-                Mockito.mockStatic(io.grpc.netty.GrpcSslContexts.class);
-        grpcSslContextBuilder
-                .when(() -> GrpcSslContexts.forClient())
-                .then(
-                        invocation -> {
-                            SslContextBuilder sslContext = Mockito.mock(SslContextBuilder.class);
-                            Mockito.when(
-                                            sslContext.applicationProtocolConfig(
-                                                    any(ApplicationProtocolConfig.class)))
-                                    .then(i -> sslContext);
-                            Mockito.when(sslContext.build())
-                                    .thenThrow(new SSLException("Dummy Exception"));
-                            return sslContext;
-                        });
+    public void testCanThrowExceptionWithInvalidPemPath() {
         GrpcRequestConfig grpcRequestConfig =
                 new GrpcRequestConfig(
                         "localhost:1231",
@@ -329,30 +287,17 @@ public class ClientCallerTest extends BaseTest {
                         LIB_FOLDER.toString(),
                         FULL_METHOD,
                         true,
-                        false,
-                        DEFAULT_CHANNEL_SHUTDOWN_TIME);
+                        5000,
+                        "/path/not/found/ca.pem",
+                        null,
+                        null);
         clientCaller = new ClientCaller(grpcRequestConfig);
     }
 
     @Test(
             expectedExceptions = RuntimeException.class,
             expectedExceptionsMessageRegExp = "Error in create SSL connection!")
-    public void testCanThrowExceptionWithSSLExceptionAndDisableSSLVerification() {
-        MockedStatic<io.grpc.netty.GrpcSslContexts> grpcSslContextBuilder =
-                Mockito.mockStatic(io.grpc.netty.GrpcSslContexts.class);
-        grpcSslContextBuilder
-                .when(() -> GrpcSslContexts.forClient())
-                .then(
-                        invocation -> {
-                            SslContextBuilder sslContext = Mockito.mock(SslContextBuilder.class);
-                            Mockito.when(
-                                            sslContext.applicationProtocolConfig(
-                                                    any(ApplicationProtocolConfig.class)))
-                                    .then(i -> sslContext);
-                            Mockito.when(sslContext.build())
-                                    .thenThrow(new SSLException("Dummy Exception"));
-                            return sslContext;
-                        });
+    public void testCanThrowExceptionWithInvalidPemPathAndTlsEnabled() {
         GrpcRequestConfig grpcRequestConfig =
                 new GrpcRequestConfig(
                         "localhost:1231",
@@ -360,8 +305,10 @@ public class ClientCallerTest extends BaseTest {
                         LIB_FOLDER.toString(),
                         FULL_METHOD,
                         true,
-                        true,
-                        DEFAULT_CHANNEL_SHUTDOWN_TIME);
+                        5000,
+                        "/path/not/found/ca.pem",
+                        null,
+                        null);
         clientCaller = new ClientCaller(grpcRequestConfig);
     }
 
