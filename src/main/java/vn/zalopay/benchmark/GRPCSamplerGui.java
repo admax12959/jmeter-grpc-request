@@ -621,7 +621,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                         }
 
                         try {
-                            String[] protoMethods = getProtoMethods(true);
+                            String[] protoMethods = getCurrentProtoMethodsOrLoad(true);
                             for (String protoMethod : protoMethods) {
                                 boolean startsWith = protoMethod.startsWith(fullMethod);
                                 if (startsWith) {
@@ -640,5 +640,17 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                         generateGRPCRequestMockData();
                     }
                 });
+    }
+
+    private String[] getCurrentProtoMethodsOrLoad(boolean reload) throws Exception {
+        if (!reload && protoMethods != null && protoMethods.length > 0) {
+            return protoMethods;
+        }
+        JMeterVariableUtils.undoVariableReplacement(grpcSampler);
+        java.util.List<String> methodList =
+                vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.loadSync(
+                        grpcSampler.getProtoFolder(), grpcSampler.getLibFolder(), reload);
+        updateMethodModel(methodList);
+        return protoMethods;
     }
 }
