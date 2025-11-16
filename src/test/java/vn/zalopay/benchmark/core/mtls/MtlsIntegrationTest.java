@@ -47,8 +47,6 @@ public class MtlsIntegrationTest {
         File serverKey = Paths.get(System.getProperty("user.dir"), "dist", "cert", "localhost.key").toFile();
         File clientCert = serverCert; // for test purpose, reuse same cert/key as client identity
 
-        io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.ensureAlpnAndH2Enabled(
-                io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder.forServer(serverCert, serverKey));
         io.grpc.netty.shaded.io.netty.handler.ssl.SslContext sslContext =
                 io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forServer(serverCert, serverKey)
                         .trustManager(clientCert)
