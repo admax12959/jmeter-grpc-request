@@ -390,29 +390,66 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
     }
 
     private void reloadProtoMethods(boolean reload) {
-        getProtoMethods(reload);
+        // Allow tests to keep deterministic synchronous behavior
+        boolean blockOnScan = Boolean.parseBoolean(
+                System.getProperty("jmeter.grpc.ui.blockOnScan", "false"));
+        if (blockOnScan) {
+            loadProtoMethodsSync(reload);
+        } else {
+            loadProtoMethodsAsync(reload);
+        }
+    }
+
+    private void loadProtoMethodsSync(boolean reload) {
+        try {
+            JMeterVariableUtils.undoVariableReplacement(grpcSampler);
+            List<String> methodList =
+                    vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.loadSync(
+                            grpcSampler.getProtoFolder(), grpcSampler.getLibFolder(), reload);
+            updateMethodModel(methodList);
+        } catch (Exception e) {
+            log.error("Failed to load proto methods synchronously", e);
+            showError("Failed to load methods: " + e.getMessage());
+        }
+    }
+
+    private void loadProtoMethodsAsync(boolean reload) {
+        fullMethodButton.setEnabled(false);
+        fullMethodField.setEnabled(false);
+        vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.loadAsync(
+                grpcSampler.getProtoFolder(),
+                grpcSampler.getLibFolder(),
+                reload,
+                new vn.zalopay.benchmark.core.ui.GrpcMethodListLoader.Callback() {
+                    @Override
+                    public void onSuccess(List<String> methods) {
+                        updateMethodModel(methods);
+                        fullMethodButton.setEnabled(true);
+                        fullMethodField.setEnabled(true);
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        showError("Failed to load methods: " + t.getMessage());
+                        fullMethodButton.setEnabled(true);
+                        fullMethodField.setEnabled(true);
+                    }
+                });
+    }
+
+    private void updateMethodModel(List<String> methodList) {
+        protoMethods = new String[methodList.size()];
+        methodList.toArray(protoMethods);
+        Arrays.sort(protoMethods);
+        fullMethodField.setModel(new DefaultComboBoxModel<>(protoMethods));
+        log.info("Full Methods Length: {}", protoMethods.length);
         String item = getFullMethodName();
         fullMethodField.setSelectedItem(item);
         fullMethodField.showPopup();
     }
 
-    private String[] getProtoMethods(boolean reload) {
-        try {
-            JMeterVariableUtils.undoVariableReplacement(grpcSampler);
-            ServiceResolver serviceResolver =
-                    ClientList.getServiceResolver(
-                            grpcSampler.getProtoFolder(), grpcSampler.getLibFolder(), reload);
-            List<String> methodList = ClientList.listServices(serviceResolver);
-            protoMethods = new String[methodList.size()];
-            methodList.toArray(protoMethods);
-            Arrays.sort(protoMethods);
-            fullMethodField.setModel(new DefaultComboBoxModel<>(protoMethods));
-            log.info("Full Methods Length: {}", protoMethods.length);
-            return protoMethods;
-        } catch (Exception e) {
-            log.error("Proto folder path is empty. Please select your proto folder", e);
-            throw e;
-        }
+    private void showError(String msg) {
+        JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     private void generateGRPCRequestMockData() {

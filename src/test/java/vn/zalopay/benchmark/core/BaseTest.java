@@ -81,6 +81,7 @@ public class BaseTest {
 
     @BeforeSuite
     public void setupDependencies() throws IOException {
+        System.setProperty("jmeter.grpc.ui.blockOnScan", "true");
         System.setProperty(
                 "javax.net.ssl.trustStore",
                 Paths.get(System.getProperty("user.dir"), "dist", "cert", "cacert").toString());
