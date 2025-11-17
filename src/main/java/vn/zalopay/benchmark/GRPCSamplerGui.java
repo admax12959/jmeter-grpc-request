@@ -288,6 +288,8 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                             .clientCertPemPath(grpcSampler.getTlsClientCertPemPath())
                             .clientKeyPemPath(grpcSampler.getTlsClientKeyPemPath())
                             .clientKeyPassword(grpcSampler.getTlsClientKeyPassword())
+                            .maxInboundMessageSize(4194304)
+                            .maxInboundMetadataSize(8192)
                             .build();
             vn.zalopay.benchmark.core.ui.ConnectionTester tester =
                     new vn.zalopay.benchmark.core.ui.ConnectionTester();

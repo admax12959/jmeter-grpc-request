@@ -8,7 +8,9 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class GrpcRequestConfig {
+    @lombok.Builder.Default
     private int maxInboundMessageSize = 4194304;
+    @lombok.Builder.Default
     private int maxInboundMetadataSize = 8192;
     private String hostPort;
     private String protoFolder;
@@ -26,6 +28,7 @@ public class GrpcRequestConfig {
     // Inline protos and library content (optional)
     private String protoContent; // inline .proto content (single file)
     private String libContentZipBase64; // base64-encoded ZIP of library directory
+    @lombok.Builder.Default
     private int awaitTerminationTimeout = 5000;
 
     public GrpcRequestConfig() {}

@@ -51,7 +51,8 @@ public final class PemUtils {
         Object parsed = parseFirstPemObject(pem);
         try {
             PrivateKeyInfo pki;
-            JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
+            // Do not force provider name; avoid 'no such provider: BC' when shaded.
+            JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
 
             if (parsed instanceof PKCS8EncryptedPrivateKeyInfo) {
                 if (password == null || password.length == 0) {
