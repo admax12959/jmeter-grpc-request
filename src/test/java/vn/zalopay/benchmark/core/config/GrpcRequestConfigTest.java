@@ -108,8 +108,8 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig.GrpcRequestConfigBuilder(maxInboundMessageSize=0,"
                     + " maxInboundMetadataSize=0, hostPort=null, protoFolder=null, libFolder=null,"
                     + " fullMethod=null, tls=false, tlsDisableVerification=false, caPemPath=null,"
-                    + " clientCertPemPath=null, clientKeyPemPath=null, protoContent=null,"
-                    + " libContentZipBase64=null, awaitTerminationTimeout=0)");
+                    + " clientCertPemPath=null, clientKeyPemPath=null, clientKeyPassword=null,"
+                    + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=0)");
         Assert.assertEquals(
                 grpcRequestConfigString,
                 "GrpcRequestConfig{maxInboundMessageSize=1000, maxInboundMetadataSize=1000,"
@@ -266,8 +266,8 @@ public class GrpcRequestConfigTest {
                 "GrpcRequestConfig.GrpcRequestConfigBuilder(maxInboundMessageSize=1000,"
                         + " maxInboundMetadataSize=1000, hostPort=a, protoFolder=b, libFolder=c,"
                         + " fullMethod=d, tls=true, tlsDisableVerification=true, caPemPath=null,"
-                        + " clientCertPemPath=null, clientKeyPemPath=null, protoContent=null,"
-                        + " libContentZipBase64=null, awaitTerminationTimeout=1000)");
+                        + " clientCertPemPath=null, clientKeyPemPath=null, clientKeyPassword=null,"
+                        + " protoContent=null, libContentZipBase64=null, awaitTerminationTimeout=1000)");
     }
 
     @Test

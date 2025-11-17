@@ -51,11 +51,37 @@ public class ChannelFactory {
             return NettyChannelBuilder.forAddress(
                     endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
         }
+        // If client key password is provided, build Netty SslContext with password support
+        if (notBlank(security.getClientKeyPassword())) {
+            io.grpc.netty.shaded.io.netty.handler.ssl.SslContext sslContext =
+                    buildSslContextWithPassword(security);
+            return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort())
+                    .sslContext(sslContext);
+        }
         ChannelCredentials creds = buildTlsCredentials(security);
-        // Use NettyChannelBuilder directly to avoid ManagedChannelRegistry provider capability
-        // checks (e.g., DomainSocketAddress) that can fail on some platforms although we only
-        // need TCP.
+        // Use NettyChannelBuilder directly to avoid ManagedChannelRegistry provider capability checks
         return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort(), creds);
+    }
+
+    private io.grpc.netty.shaded.io.netty.handler.ssl.SslContext buildSslContextWithPassword(
+            GrpcSecurityConfig security) {
+        try {
+            io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder b =
+                    io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
+            if (notBlank(security.getCaPemPath())) {
+                b = b.trustManager(new java.io.File(security.getCaPemPath()));
+            }
+            if (notBlank(security.getClientCertPemPath()) && notBlank(security.getClientKeyPemPath())) {
+                b = b.keyManager(
+                        new java.io.File(security.getClientCertPemPath()),
+                        new java.io.File(security.getClientKeyPemPath()),
+                        security.getClientKeyPassword());
+            }
+            return b.build();
+        } catch (Exception e) {
+            LOGGER.error("Error in create SslContext {}", e.getMessage());
+            throw new RuntimeException("Error in create SSL connection!", e);
+        }
     }
 
     private ChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {

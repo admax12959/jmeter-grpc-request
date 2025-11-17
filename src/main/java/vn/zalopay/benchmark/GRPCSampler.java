@@ -40,6 +40,7 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public static final String TLS_CA_PEM_PATH = "GRPCSampler.tls.caPemPath";
     public static final String TLS_CLIENT_CERT_PEM_PATH = "GRPCSampler.tls.clientCertPemPath";
     public static final String TLS_CLIENT_KEY_PEM_PATH = "GRPCSampler.tls.clientKeyPemPath";
+    public static final String TLS_CLIENT_KEY_PASSWORD = "GRPCSampler.tls.clientKeyPassword";
     public static final String CHANNEL_SHUTDOWN_AWAIT_TIME = "GRPCSampler.channelAwaitTermination";
     public static final String CHANNEL_MAX_INBOUND_MESSAGE_SIZE =
             "GRPCSampler" + ".maxInboundMessageSize";
@@ -330,6 +331,8 @@ public class GRPCSampler extends AbstractSampler implements ThreadListener, Test
     public void setTlsClientCertPemPath(String v) { setProperty(TLS_CLIENT_CERT_PEM_PATH, v); }
     public String getTlsClientKeyPemPath() { return getPropertyAsString(TLS_CLIENT_KEY_PEM_PATH); }
     public void setTlsClientKeyPemPath(String v) { setProperty(TLS_CLIENT_KEY_PEM_PATH, v); }
+    public String getTlsClientKeyPassword() { return getPropertyAsString(TLS_CLIENT_KEY_PASSWORD); }
+    public void setTlsClientKeyPassword(String v) { setProperty(TLS_CLIENT_KEY_PASSWORD, v); }
 
     private String getHostPort() {
         return getHost() + ":" + getPort();

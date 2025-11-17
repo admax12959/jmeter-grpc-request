@@ -24,5 +24,7 @@ public class GrpcSecurityConfig {
 
     /** Client private key (PKCS#8 PEM) for mTLS. Optional. */
     private final String clientKeyPemPath;
-}
 
+    /** Client private key password for encrypted PKCS#8. Optional. */
+    private final String clientKeyPassword;
+}

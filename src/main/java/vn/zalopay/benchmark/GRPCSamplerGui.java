@@ -73,6 +73,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
     private JLabeledTextField caPemField;
     private JLabeledTextField clientCertPemField;
     private JLabeledTextField clientKeyPemField;
+    private JLabeledTextField clientKeyPasswordField;
 
     private JSyntaxTextArea requestJsonArea;
 
@@ -124,6 +125,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         grpcSampler.setTlsCaPemPath(this.caPemField.getText());
         grpcSampler.setTlsClientCertPemPath(this.clientCertPemField.getText());
         grpcSampler.setTlsClientKeyPemPath(this.clientKeyPemField.getText());
+        grpcSampler.setTlsClientKeyPassword(this.clientKeyPasswordField.getText());
         grpcSampler.setChannelShutdownAwaitTime(this.channelFactoryShutdownTimeField.getText());
         grpcSampler.setChannelMaxInboundMessageSize(this.maxInboundMessageSize.getText());
         grpcSampler.setChannelMaxInboundMetadataSize(this.maxInboundMetadataSize.getText());
@@ -231,6 +233,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         caPemField = new JLabeledTextField("CA PEM Path:", 24);
         clientCertPemField = new JLabeledTextField("Client Cert PEM Path:", 24);
         clientKeyPemField = new JLabeledTextField("Client Key PEM Path:", 24);
+        clientKeyPasswordField = new JLabeledTextField("Client Key Password (Optional):", 12);
         JPanel webServerPanel = new VerticalPanel();
         webServerPanel.setBorder(BorderFactory.createTitledBorder("Web Server")); // $NON-NLS-1$
 
@@ -246,6 +249,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         tlsPemPanel.add(caPemField);
         tlsPemPanel.add(clientCertPemField);
         tlsPemPanel.add(clientKeyPemField);
+        tlsPemPanel.add(clientKeyPasswordField);
         JButton testConnectionButton = new JButton("Test Connection");
         testConnectionButton.addActionListener(e -> doTestConnection());
         tlsPemPanel.add(testConnectionButton);

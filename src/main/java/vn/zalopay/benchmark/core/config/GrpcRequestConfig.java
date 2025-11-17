@@ -21,6 +21,7 @@ public class GrpcRequestConfig {
     private String caPemPath; // Trusted CA or server certificate (PEM)
     private String clientCertPemPath; // Client certificate chain (PEM)
     private String clientKeyPemPath; // Client private key (PKCS#8 PEM)
+    private String clientKeyPassword; // Optional password for encrypted PKCS#8 key
 
     // Inline protos and library content (optional)
     private String protoContent; // inline .proto content (single file)

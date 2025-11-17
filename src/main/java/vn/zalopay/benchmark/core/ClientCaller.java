@@ -167,6 +167,7 @@ public class ClientCaller implements AutoCloseable {
                         .caPemPath(caPemPath)
                         .clientCertPemPath(clientCertPemPath)
                         .clientKeyPemPath(clientKeyPemPath)
+                        .clientKeyPassword(requestConfig.getClientKeyPassword())
                         .build();
         channel =
                 channelFactory.createChannel(
