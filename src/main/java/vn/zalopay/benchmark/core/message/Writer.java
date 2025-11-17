@@ -31,13 +31,20 @@ public class Writer<T extends Message> implements StreamObserver<T> {
 
     @Override
     public void onCompleted() {
-        LOGGER.debug("On completed gRPC message: {}", grpcResponse.getGrpcMessageString());
+        try {
+            String msg = grpcResponse.getGrpcMessageString();
+            int size = msg == null ? 0 : msg.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            LOGGER.info("[GRPC] Stream completed. success={} sizeBytes={}", grpcResponse.isSuccess(), size);
+        } catch (Exception e) {
+            LOGGER.debug("[GRPC] Stream completed (size calc failed): {}", e.getMessage());
+        }
     }
 
     @Override
     public void onError(Throwable throwable) {
         grpcResponse.setSuccess(false);
         grpcResponse.setThrowable(throwable);
+        LOGGER.error("[GRPC] Stream error: {}", throwable.toString());
     }
 
     @Override
@@ -45,6 +52,9 @@ public class Writer<T extends Message> implements StreamObserver<T> {
         try {
             grpcResponse.setSuccess(true);
             grpcResponse.storeGrpcMessage(jsonPrinter.print(message));
+            String s = grpcResponse.getGrpcMessageString();
+            int size = s == null ? 0 : s.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            LOGGER.info("[GRPC] Received message sizeBytes={}", size);
         } catch (InvalidProtocolBufferException e) {
             LOGGER.warn(e.getMessage());
             grpcResponse.storeGrpcMessage(message.toString());

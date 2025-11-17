@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ClientCaller implements AutoCloseable {
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ClientCaller.class);
     private Descriptors.MethodDescriptor methodDescriptor;
     private JsonFormat.TypeRegistry registry;
     private DynamicGrpcClient dynamicClient;
@@ -211,20 +212,82 @@ public class ClientCaller implements AutoCloseable {
         GrpcResponse grpcResponse = new GrpcResponse();
         StreamObserver<DynamicMessage> streamObserver =
                 ComponentObserver.of(Writer.create(grpcResponse, registry));
+        long t0 = System.nanoTime();
+        // Pre-call logging
         try {
+            LOGGER.info(
+                    "[GRPC] Request start method={} target={} deadlineMs={} metadataKeys={}",
+                    methodDescriptor.getFullName(),
+                    hostAndPort.toString(),
+                    deadline,
+                    String.join(", ", metadataMap.keySet()));
             dynamicClient
                     .blockingUnaryCall(requestMessages, streamObserver, callOptions(deadline))
                     .get();
+            long elapsed = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
+            int size = 0;
+            try {
+                String s = grpcResponse.getGrpcMessageString();
+                size = s == null ? 0 : s.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            } catch (Exception ignore) {}
+            LOGGER.info(
+                    "[GRPC] Response OK method={} elapsedMs={} sizeBytes={}",
+                    methodDescriptor.getFullName(),
+                    elapsed,
+                    size);
         } catch (Exception e) {
-            grpcResponse.setSuccess(false);
-            Throwable ex;
-            if (e instanceof ExecutionException) {
-                ex = e.getCause();
-            } else {
-                ex = e;
+            // One-shot retry for transient transport errors (e.g., UNAVAILABLE) to smooth initial
+            // connection races without burdening the server. Keep it conservative.
+            Throwable cause = (e instanceof ExecutionException) ? e.getCause() : e;
+            boolean retried = false;
+            if (cause instanceof io.grpc.StatusRuntimeException) {
+                io.grpc.StatusRuntimeException sre = (io.grpc.StatusRuntimeException) cause;
+                LOGGER.error(
+                        "[GRPC] Request failed method={} code={} desc={} trailers={}",
+                        methodDescriptor.getFullName(),
+                        sre.getStatus().getCode(),
+                        sre.getStatus().getDescription(),
+                        String.valueOf(sre.getTrailers()));
+                if (sre.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                    try { Thread.sleep(150); } catch (InterruptedException ignore) {}
+                    try {
+                        LOGGER.info("[GRPC] Retry once after UNAVAILABLE for method={}", methodDescriptor.getFullName());
+                        dynamicClient
+                                .blockingUnaryCall(
+                                        requestMessages, streamObserver, callOptions(deadline))
+                                .get();
+                        retried = true;
+                        long elapsed = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t0);
+                        int size = 0;
+                        try {
+                            String s = grpcResponse.getGrpcMessageString();
+                            size = s == null ? 0 : s.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+                        } catch (Exception ignore2) {}
+                        LOGGER.info(
+                                "[GRPC] Response OK (after retry) method={} elapsedMs={} sizeBytes={}",
+                                methodDescriptor.getFullName(),
+                                elapsed,
+                                size);
+                    } catch (Exception retryEx) {
+                        cause = (retryEx instanceof ExecutionException) ? retryEx.getCause() : retryEx;
+                    }
+                }
             }
-            grpcResponse.setThrowable(ex);
-            shutdownNettyChannel();
+            if (!retried) {
+                grpcResponse.setSuccess(false);
+                grpcResponse.setThrowable(cause);
+                // Log final failure with cause chain
+                StringBuilder sb = new StringBuilder();
+                Throwable t = cause;
+                int depth = 0;
+                while (t != null && depth++ < 6) { sb.append(t.toString()).append(" | "); t = t.getCause(); }
+                LOGGER.error(
+                        "[GRPC] Response FAIL method={} target={} reason={}",
+                        methodDescriptor.getFullName(),
+                        hostAndPort,
+                        sb.toString());
+                shutdownNettyChannel();
+            }
         }
 
         return grpcResponse;
