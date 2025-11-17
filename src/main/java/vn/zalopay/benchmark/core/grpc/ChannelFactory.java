@@ -6,6 +6,7 @@ import io.grpc.*;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.TlsChannelCredentials;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +48,14 @@ public class ChannelFactory {
     private ManagedChannelBuilder<?> createChannelBuilder(
             HostAndPort endpoint, GrpcSecurityConfig security) {
         if (security == null || !security.isTls()) {
-            return Grpc.newChannelBuilderForAddress(
+            return NettyChannelBuilder.forAddress(
                     endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
         }
         ChannelCredentials creds = buildTlsCredentials(security);
-        return Grpc.newChannelBuilderForAddress(endpoint.getHost(), endpoint.getPort(), creds);
+        // Use NettyChannelBuilder directly to avoid ManagedChannelRegistry provider capability
+        // checks (e.g., DomainSocketAddress) that can fail on some platforms although we only
+        // need TCP.
+        return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort(), creds);
     }
 
     private ChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {
