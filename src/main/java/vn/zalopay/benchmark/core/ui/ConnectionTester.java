@@ -50,7 +50,7 @@ public class ConnectionTester {
     /**
      * Parse simple Subject/Issuer details from CA PEM file for diagnostics.
      */
-    static String parseCertDetails(String caPemPath) {
+    public static String parseCertDetails(String caPemPath) {
         if (caPemPath == null || caPemPath.trim().isEmpty()) return "";
         try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(
                 java.nio.file.Paths.get(caPemPath))) {
