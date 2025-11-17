@@ -157,6 +157,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         caPemField.setText(grpcSampler.getTlsCaPemPath());
         clientCertPemField.setText(grpcSampler.getTlsClientCertPemPath());
         clientKeyPemField.setText(grpcSampler.getTlsClientKeyPemPath());
+        clientKeyPasswordField.setText(grpcSampler.getTlsClientKeyPassword());
         channelFactoryShutdownTimeField.setText(
                 Integer.toString(grpcSampler.getChannelShutdownAwaitTime()));
         maxInboundMessageSize.setText(
@@ -264,6 +265,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
             grpcSampler.setTlsCaPemPath(caPemField.getText());
             grpcSampler.setTlsClientCertPemPath(clientCertPemField.getText());
             grpcSampler.setTlsClientKeyPemPath(clientKeyPemField.getText());
+            grpcSampler.setTlsClientKeyPassword(clientKeyPasswordField.getText());
             grpcSampler.setHost(hostField.getText());
             grpcSampler.setPort(portField.getText());
             grpcSampler.setProtoFolder(protoFolderField.getText());
@@ -285,12 +287,19 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                             .caPemPath(grpcSampler.getTlsCaPemPath())
                             .clientCertPemPath(grpcSampler.getTlsClientCertPemPath())
                             .clientKeyPemPath(grpcSampler.getTlsClientKeyPemPath())
+                            .clientKeyPassword(grpcSampler.getTlsClientKeyPassword())
                             .build();
             vn.zalopay.benchmark.core.ui.ConnectionTester tester =
                     new vn.zalopay.benchmark.core.ui.ConnectionTester();
             boolean ok = tester.test(cfg, 2000);
             String detail = vn.zalopay.benchmark.core.ui.ConnectionTester.parseCertDetails(
                     grpcSampler.getTlsCaPemPath());
+            // Optional hostname mismatch hint using Subject/SAN in CA/Server cert
+            String hostHint = vn.zalopay.benchmark.core.ui.ConnectionTester.hostnameHint(
+                    grpcSampler.getHost(), grpcSampler.getTlsCaPemPath());
+            if (!hostHint.isEmpty()) {
+                detail = detail + "\n" + hostHint;
+            }
             if (ok) {
                 log.info("[TestConnection] SUCCESS to {}", cfg.getHostPort());
             } else {

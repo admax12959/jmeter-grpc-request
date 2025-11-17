@@ -28,6 +28,7 @@ public class ConnectionTester {
                         .caPemPath(cfg.getCaPemPath())
                         .clientCertPemPath(cfg.getClientCertPemPath())
                         .clientKeyPemPath(cfg.getClientKeyPemPath())
+                        .clientKeyPassword(cfg.getClientKeyPassword())
                         .build();
         ManagedChannel ch =
                 ChannelFactory.create()
@@ -81,6 +82,54 @@ public class ConnectionTester {
                 out.append("Issuer: ").append(x.getIssuerX500Principal().getName()).append('\n');
             }
             return out.toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Build a hostname validation hint by comparing target host with CN/SAN from the first cert.
+     * This is a best-effort diagnostic to guide users when hostname verification might fail.
+     */
+    public static String hostnameHint(String host, String certPemPath) {
+        if (host == null || host.isBlank() || certPemPath == null || certPemPath.isBlank()) return "";
+        try (java.io.BufferedReader br = java.nio.file.Files.newBufferedReader(
+                java.nio.file.Paths.get(certPemPath))) {
+            StringBuilder pem = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) pem.append(line).append('\n');
+            String pemStr = pem.toString();
+            int i = pemStr.indexOf("-----BEGIN CERTIFICATE-----");
+            int j = pemStr.indexOf("-----END CERTIFICATE-----");
+            if (i < 0 || j < 0 || j <= i) return "";
+            String firstCert = pemStr.substring(i + "-----BEGIN CERTIFICATE-----".length(), j)
+                    .replaceAll("\\s", "");
+            byte[] der = java.util.Base64.getMimeDecoder().decode(firstCert);
+            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
+            java.security.cert.X509Certificate x = (java.security.cert.X509Certificate) cf.generateCertificate(
+                    new java.io.ByteArrayInputStream(der));
+            java.util.Set<String> names = new java.util.LinkedHashSet<>();
+            String dn = x.getSubjectX500Principal().getName();
+            // Extract simple CN
+            for (String part : dn.split(",")) {
+                String p = part.trim();
+                if (p.startsWith("CN=")) names.add(p.substring(3));
+            }
+            try {
+                java.util.Collection<java.util.List<?>> sans = x.getSubjectAlternativeNames();
+                if (sans != null) {
+                    for (java.util.List<?> san : sans) {
+                        if (san.size() >= 2 && san.get(1) instanceof String) {
+                            names.add((String) san.get(1));
+                        }
+                    }
+                }
+            } catch (Exception ignore) {}
+            if (names.isEmpty()) return "";
+            boolean match = names.stream().anyMatch(n -> host.equalsIgnoreCase(n));
+            if (match) return "";
+            return "Hint: target host '" + host + "' does not match certificate names: "
+                    + String.join(", ", names);
         } catch (Exception e) {
             return "";
         }

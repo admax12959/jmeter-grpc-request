@@ -73,7 +73,7 @@ Run test:
 | 1   	| Server Name or IP                 	| Domain/IP for gRPC server                                         	|
 | 2   	| Port Number                       	| Port for gRPC server (80/ 443)                                      	|
 | 3   	| SSL/TLS                           	| SSL/TLS to authenticate the server                                  	|
-| 4     | Disable SSL/TLS Cert Verification     | Disable SSL/TLS certificate verification (enable this function when using self-signed certificates)                                      |
+| 4     | TLS/mTLS (PEM only)                | Provide CA PEM, Client Cert PEM, Client Key PEM (PKCS#8). Encrypted PKCS#8 keys are supported via “Client Key Password (Optional)”. |
 | 5   	| Proto Root Directory              	| Root directory contains proto files                                 	|
 | 6   	| Library Directory (Optional)      	| Using a different underlying library (googleapis)                   	|
 | 7   	| Full Method                       	| Full Method to test                                                 	|
@@ -111,7 +111,12 @@ In order to build JMeter GRPC Request from source, you will need:
 - This plugin uses gRPC Credentials API + grpc-netty-shaded with ALPN/HTTP2.
 - Insecure/disable verification mode has been removed.
 - “Test Connection” shows result in a dialog and logs details (initial/transition states);
-  on failures, Subject/Issuer from CA PEM are included in logs to aid debugging.
+  on failures, Subject/Issuer from CA PEM and hostname mismatch hints are included in logs to aid debugging.
+
+Notes on private keys:
+- If your key is in PKCS#1 (BEGIN RSA PRIVATE KEY) or SEC1 EC format, convert to PKCS#8:
+  - RSA: `openssl pkcs8 -topk8 -inform PEM -outform PEM -in client.key -out client_pkcs8.key -nocrypt`
+  - EC:  `openssl pkcs8 -topk8 -inform PEM -outform PEM -in client.key -out client_pkcs8.key -nocrypt`
 
 ### Inline Protos (optional)
 
