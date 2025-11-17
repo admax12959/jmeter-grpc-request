@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import vn.zalopay.benchmark.core.config.GrpcRequestConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import vn.zalopay.benchmark.core.config.GrpcSecurityConfig;
 import vn.zalopay.benchmark.core.grpc.ChannelFactory;
 
@@ -17,6 +19,7 @@ import vn.zalopay.benchmark.core.grpc.ChannelFactory;
  * attempt and observes state transitions within a timeout window.
  */
 public class ConnectionTester {
+    private static final Logger log = LoggerFactory.getLogger(ConnectionTester.class);
     public boolean test(GrpcRequestConfig cfg, long timeoutMillis) {
         HostAndPort endpoint = HostAndPort.fromString(cfg.getHostPort());
         GrpcSecurityConfig sec =
@@ -33,6 +36,7 @@ public class ConnectionTester {
         try {
             Instant end = Instant.now().plus(Duration.ofMillis(timeoutMillis));
             ConnectivityState state = ch.getState(true);
+            log.info("[TestConnection] initial state: {}", state);
             while (Instant.now().isBefore(end)) {
                 if (state == ConnectivityState.READY) return true;
                 try {
@@ -40,6 +44,7 @@ public class ConnectionTester {
                 } catch (InterruptedException ignored) {
                 }
                 state = ch.getState(false);
+                log.debug("[TestConnection] state: {}", state);
             }
             return state == ConnectivityState.READY;
         } finally {

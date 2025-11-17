@@ -264,6 +264,14 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
             grpcSampler.setPort(portField.getText());
             grpcSampler.setProtoFolder(protoFolderField.getText());
             grpcSampler.setLibFolder(libFolderField.getText());
+            // Log start of connection test for JMeter log viewer
+            log.info(
+                    "[TestConnection] hostPort={} tls={} caPem={} clientCertPem={} clientKeyPem={}",
+                    grpcSampler.getHost() + ":" + grpcSampler.getPort(),
+                    grpcSampler.isTls(),
+                    safePath(grpcSampler.getTlsCaPemPath()),
+                    safePath(grpcSampler.getTlsClientCertPemPath()),
+                    safePath(grpcSampler.getTlsClientKeyPemPath()));
             vn.zalopay.benchmark.core.config.GrpcRequestConfig cfg =
                     vn.zalopay.benchmark.core.config.GrpcRequestConfig.builder()
                             .hostPort(grpcSampler.getHost() + ":" + grpcSampler.getPort())
@@ -279,6 +287,11 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
             boolean ok = tester.test(cfg, 2000);
             String detail = vn.zalopay.benchmark.core.ui.ConnectionTester.parseCertDetails(
                     grpcSampler.getTlsCaPemPath());
+            if (ok) {
+                log.info("[TestConnection] SUCCESS to {}", cfg.getHostPort());
+            } else {
+                log.warn("[TestConnection] FAIL to {}\n{}", cfg.getHostPort(), detail);
+            }
             String msg = ok ? "Connection OK" : ("Connection failed\n" + detail);
             JOptionPane.showMessageDialog(
                     this,
@@ -286,9 +299,17 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                     "Test Connection",
                     ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
+            log.error("[TestConnection] ERROR: {}", ex.getMessage(), ex);
             JOptionPane.showMessageDialog(
                     this, ex.getMessage(), "Test Connection", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    // Hide sensitive parts of path if needed (avoid logging entire content accidentally)
+    private String safePath(String p) {
+        if (p == null) return "";
+        if (p.length() <= 4) return p;
+        return p;
     }
 
     private JPanel getRequestJSONPanel() {
