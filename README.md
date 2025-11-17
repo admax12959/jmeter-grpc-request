@@ -120,9 +120,11 @@ Notes on private keys:
 
 ### Inline Protos (optional)
 
-- Toggle “Use Inline Protos” to paste a single .proto file content directly.
-- For imports/3rd-party protos, provide a base64-encoded ZIP of the library directory.
-- The plugin extracts the ZIP to a temp folder and adds it to protoc include paths.
+- Toggle “Use Inline Protos” to paste a single `.proto` file content directly.
+- For imports/3rd-party protos, provide libraries as JSON (preferred):
+  - Object mapping: `{ "google/type/date.proto": "syntax = \"proto3\";..." }`
+  - Or array of entries: `[{ "path": "google/type/date.proto", "content": "syntax=..." }]`
+- Legacy base64 ZIP is still accepted for backward compatibility, but JSON is recommended.
 
 ### Build from source
 

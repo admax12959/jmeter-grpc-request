@@ -209,9 +209,12 @@
                                     </excludes>
                                 </filter>
                             </filters>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                             <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
                             <relocations>
                                 <relocation>
                                     <pattern>org.bouncycastle</pattern>

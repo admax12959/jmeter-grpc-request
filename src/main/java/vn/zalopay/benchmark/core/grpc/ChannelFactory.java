@@ -7,6 +7,7 @@ import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.TlsChannelCredentials;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,21 @@ public class ChannelFactory {
             int maxInboundMessageSize,
             int maxInboundMetadataSize) {
         ManagedChannelBuilder<?> builder = createChannelBuilder(endpoint, security);
+        // Prefer pick_first and keepalive to drive connection establishment for probes and reduce
+        // transient READY delays. These options are safe for production as well.
+        try {
+            if (builder instanceof io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder) {
+                io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder nb =
+                        (io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder) builder;
+                nb.defaultLoadBalancingPolicy("pick_first")
+                        .keepAliveWithoutCalls(true)
+                        .keepAliveTime(30, java.util.concurrent.TimeUnit.SECONDS)
+                        .keepAliveTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                        .idleTimeout(5, java.util.concurrent.TimeUnit.MINUTES);
+            }
+        } catch (Throwable ignore) {
+            // Non-fatal if options are unavailable in shaded environment
+        }
         builder.maxInboundMessageSize(maxInboundMessageSize);
         builder.maxInboundMetadataSize(maxInboundMetadataSize);
         builder.intercept(metadataInterceptor(metadataHash));
@@ -47,13 +63,13 @@ public class ChannelFactory {
 
     private ManagedChannelBuilder<?> createChannelBuilder(
             HostAndPort endpoint, GrpcSecurityConfig security) {
+        InetSocketAddress addr = new InetSocketAddress(endpoint.getHost(), endpoint.getPort());
         if (security == null || !security.isTls()) {
-            return NettyChannelBuilder.forAddress(
-                    endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
+            return NettyChannelBuilder.forAddress(addr, InsecureChannelCredentials.create());
         }
         ChannelCredentials creds = buildTlsCredentials(security);
-        // Use NettyChannelBuilder directly to avoid ManagedChannelRegistry provider capability checks
-        return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort(), creds);
+        // Force direct socket address to avoid default target scheme (e.g., 'unix') interference
+        return NettyChannelBuilder.forAddress(addr, creds);
     }
 
     private ChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {

@@ -74,7 +74,16 @@ public class ProtocInvoker {
         return new ProtocInvoker(discoveryRootPath, includePaths.build());
     }
 
-    /** Creates a new {@link ProtocInvoker} with inline proto content and optional library zip. */
+    /**
+     * Creates a new {@link ProtocInvoker} with inline proto content and optional libraries.
+     *
+     * Library content supports“纯文本多文件格式”（推荐）与兼容的 JSON/ZIP：
+     * - 纯文本多文件：以行首标记“=== file: <path>”开始一个文件块，直到下一个“=== file:”或结束；
+     *   例如：
+     *   === file: google/type/date.proto\nsyntax = "proto3"; ...\n=== file: foo/bar/x.proto\nsyntax = "proto3"; ...
+     * - JSON（兼容）：对象映射 {"path":"content"} 或数组 [{path,content}]；
+     * - Base64 ZIP（兼容）：lib 目录 zip 的 base64 文本。
+     */
     public static ProtocInvoker forInline(String protoContent, String libContentZipBase64) {
         try {
             Path tmpRoot = Files.createTempDirectory("inline-proto");
@@ -84,22 +93,50 @@ public class ProtocInvoker {
             ImmutableList.Builder<Path> includes = ImmutableList.builder();
 
             if (libContentZipBase64 != null && !libContentZipBase64.trim().isEmpty()) {
+                String libText = libContentZipBase64.trim();
                 Path libDir = tmpRoot.resolve("lib");
                 Files.createDirectories(libDir);
-                byte[] zipBytes = java.util.Base64.getDecoder().decode(libContentZipBase64);
-                try (java.util.zip.ZipInputStream zis =
-                        new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
-                    java.util.zip.ZipEntry entry;
-                    while ((entry = zis.getNextEntry()) != null) {
-                        Path out = libDir.resolve(entry.getName());
-                        if (entry.isDirectory()) {
-                            Files.createDirectories(out);
-                        } else {
-                            Files.createDirectories(out.getParent());
-                            try (java.io.OutputStream os = Files.newOutputStream(out)) {
-                                byte[] buf = new byte[8192];
-                                int r;
-                                while ((r = zis.read(buf)) >= 0) os.write(buf, 0, r);
+                boolean parsedPlain = false;
+                boolean parsedJson = false;
+                // Try plain multi-file format first
+                try {
+                    if (libText.contains("=== file:")) {
+                        writeLibFromPlain(libText, libDir);
+                        parsedPlain = true;
+                    }
+                } catch (Exception e) {
+                    logger.warn("Failed to parse inline lib (plain multi-file): {}", e.getMessage());
+                    parsedPlain = false;
+                }
+                // Then try JSON
+                if (!parsedPlain) {
+                    try {
+                        if (libText.startsWith("{") || libText.startsWith("[")) {
+                            parsedJson = true;
+                            writeLibFromJson(libText, libDir);
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Failed to parse inline lib JSON, fallback to base64 zip: {}", e.getMessage());
+                        parsedJson = false;
+                    }
+                }
+                // Finally, fallback to base64 zip
+                if (!parsedPlain && !parsedJson) {
+                    byte[] zipBytes = java.util.Base64.getDecoder().decode(libText);
+                    try (java.util.zip.ZipInputStream zis =
+                            new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zipBytes))) {
+                        java.util.zip.ZipEntry entry;
+                        while ((entry = zis.getNextEntry()) != null) {
+                            Path out = libDir.resolve(entry.getName());
+                            if (entry.isDirectory()) {
+                                Files.createDirectories(out);
+                            } else {
+                                Files.createDirectories(out.getParent());
+                                try (java.io.OutputStream os = Files.newOutputStream(out)) {
+                                    byte[] buf = new byte[8192];
+                                    int r;
+                                    while ((r = zis.read(buf)) >= 0) os.write(buf, 0, r);
+                                }
                             }
                         }
                     }
@@ -112,6 +149,59 @@ public class ProtocInvoker {
         } catch (Exception e) {
             throw new vn.zalopay.benchmark.exception.ProtocInvocationException(
                     "Unable to prepare inline proto content", e);
+        }
+    }
+
+    private static void writeLibFromJson(String json, Path libDir) throws IOException {
+        // Accept either object map or array entries
+        if (json.trim().startsWith("{")) {
+            java.util.Map<String, Object> map =
+                    new com.alibaba.fastjson.JSONObject().parseObject(json);
+            for (java.util.Map.Entry<String, Object> e : map.entrySet()) {
+                String path = e.getKey();
+                String content = String.valueOf(e.getValue());
+                Path out = libDir.resolve(path);
+                Files.createDirectories(out.getParent());
+                Files.write(out, content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        } else {
+            com.alibaba.fastjson.JSONArray arr =
+                    new com.alibaba.fastjson.JSONArray().parseArray(json);
+            for (int i = 0; i < arr.size(); i++) {
+                com.alibaba.fastjson.JSONObject obj = arr.getJSONObject(i);
+                String path = obj.getString("path");
+                String content = obj.getString("content");
+                if (path == null || content == null) continue;
+                Path out = libDir.resolve(path);
+                Files.createDirectories(out.getParent());
+                Files.write(out, content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        }
+    }
+
+    private static void writeLibFromPlain(String text, Path libDir) throws IOException {
+        try (BufferedReader br = new BufferedReader(new StringReader(text))) {
+            String line;
+            String currentPath = null;
+            StringBuilder buf = new StringBuilder();
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("=== file:")) {
+                    if (currentPath != null) {
+                        Path out = libDir.resolve(currentPath);
+                        Files.createDirectories(out.getParent());
+                        Files.write(out, buf.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        buf.setLength(0);
+                    }
+                    currentPath = line.substring("=== file:".length()).trim();
+                } else {
+                    buf.append(line).append('\n');
+                }
+            }
+            if (currentPath != null) {
+                Path out = libDir.resolve(currentPath);
+                Files.createDirectories(out.getParent());
+                Files.write(out, buf.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
         }
     }
 

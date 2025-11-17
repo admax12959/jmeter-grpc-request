@@ -32,6 +32,10 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.swing.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.Toolkit;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
@@ -293,14 +297,14 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                             .build();
             vn.zalopay.benchmark.core.ui.ConnectionTester tester =
                     new vn.zalopay.benchmark.core.ui.ConnectionTester();
-            boolean ok = tester.test(cfg, 2000);
+            boolean ok = tester.test(cfg, 5000);
             String detail = vn.zalopay.benchmark.core.ui.ConnectionTester.parseCertDetails(
                     grpcSampler.getTlsCaPemPath());
-            // Optional hostname mismatch hint using Subject/SAN in CA/Server cert
-            String hostHint = vn.zalopay.benchmark.core.ui.ConnectionTester.hostnameHint(
-                    grpcSampler.getHost(), grpcSampler.getTlsCaPemPath());
-            if (!hostHint.isEmpty()) {
-                detail = detail + "\n" + hostHint;
+            if (!ok) {
+                try {
+                    String diag = vn.zalopay.benchmark.core.ui.ConnectionTester.diagnose(cfg);
+                    if (diag != null && !diag.isEmpty()) detail = detail + "\n" + diag;
+                } catch (Exception ignore) {}
             }
             if (ok) {
                 log.info("[TestConnection] SUCCESS to {}", cfg.getHostPort());
@@ -308,11 +312,7 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                 log.warn("[TestConnection] FAIL to {}\n{}", cfg.getHostPort(), detail);
             }
             String msg = ok ? "Connection OK" : ("Connection failed\n" + detail);
-            JOptionPane.showMessageDialog(
-                    this,
-                    msg,
-                    "Test Connection",
-                    ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
+            showCopyableDialog("Test Connection", msg, ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
             log.error("[TestConnection] ERROR: {}", ex.getMessage(), ex);
             StringBuilder hint = new StringBuilder();
@@ -332,9 +332,60 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                 }
             } catch (Exception ignore) {
             }
-            JOptionPane.showMessageDialog(
-                    this, ex.getMessage() + hint.toString(), "Test Connection", JOptionPane.ERROR_MESSAGE);
+            showCopyableDialog(
+                    "Test Connection",
+                    ex.getMessage() + hint,
+                    JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /**
+     * Show a resizable dialog with a scrollable, selectable text area and a "Copy" button so
+     * users can easily copy error details from Test Connection.
+     */
+    private void showCopyableDialog(String title, String content, int messageType) {
+        java.awt.Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg;
+        if (owner instanceof java.awt.Frame) {
+            dlg = new JDialog((java.awt.Frame) owner, title, true);
+        } else if (owner instanceof java.awt.Dialog) {
+            dlg = new JDialog((java.awt.Dialog) owner, title, true);
+        } else {
+            dlg = new JDialog((java.awt.Frame) null, title, true);
+        }
+        dlg.setLayout(new BorderLayout(8, 8));
+        JTextArea area = new JTextArea(content);
+        area.setEditable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setCaretPosition(0);
+        JScrollPane sp = new JScrollPane(area);
+        sp.setPreferredSize(new Dimension(720, 360));
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton copy = new JButton("Copy");
+        JButton close = new JButton("Close");
+        buttons.add(copy);
+        buttons.add(close);
+
+        copy.addActionListener(e -> {
+            Clipboard cb = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Transferable t = new StringSelection(area.getText());
+            try { cb.setContents(t, null); } catch (Exception ignore) {}
+        });
+        close.addActionListener(e -> dlg.dispose());
+
+        // Optional icon banner based on message type
+        JLabel banner = new JLabel(messageType == JOptionPane.ERROR_MESSAGE ? "Error" : "Info");
+        banner.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 8));
+
+        dlg.add(banner, BorderLayout.NORTH);
+        dlg.add(sp, BorderLayout.CENTER);
+        dlg.add(buttons, BorderLayout.SOUTH);
+        dlg.pack();
+        dlg.setLocationRelativeTo(this);
+        dlg.setResizable(true);
+        dlg.setVisible(true);
     }
 
     // Hide sensitive parts of path if needed (avoid logging entire content accidentally)
@@ -493,8 +544,13 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
 
         // Inline lib content (base64 zip)
         addToPanel(
-                requestPanel, labelConstraints, 0, row, new JLabel("Lib Content (Base64 ZIP):", JLabel.RIGHT));
+                requestPanel,
+                labelConstraints,
+                0,
+                row,
+                new JLabel("Lib Files (=== file: <path> sections):", JLabel.RIGHT));
         libContentArea = new javax.swing.JTextArea(3, 20);
+        libContentArea.setToolTipText("Use '=== file: path' to start a file, then paste its proto content. Repeat for multiple files.");
         addToPanel(requestPanel, editConstraints, 1, row, new JScrollPane(libContentArea));
         row++;
 

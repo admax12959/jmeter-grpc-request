@@ -101,3 +101,10 @@ mvn clean package
 - TLS：在 UI 中填写 CA PEM（可使用服务端证书或信任链）
 - mTLS：额外提供 Client Cert PEM 和 Client Key PEM（PKCS#8）
 - Test Connection：点击按钮会尝试建立连接并反馈成功/失败；失败时会提示可能的证书/主机名问题
+### 内联 Proto（可选）
+
+- 勾选“Use Inline Protos”后，可直接粘贴单个 `.proto` 文件内容。
+- 若有 import/第三方依赖库，推荐以 JSON 形式提供：
+  - 对象映射：`{ "google/type/date.proto": "syntax = \"proto3\";..." }`
+  - 或数组：`[{ "path": "google/type/date.proto", "content": "syntax=..." }]`
+- 兼容旧方式：仍可提供 Base64 ZIP，但推荐使用 JSON 原始文本，方便审阅与版本管理。
