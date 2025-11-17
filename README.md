@@ -31,6 +31,7 @@ Warning: Disabling SSL/TLS certificate verification is intended for development 
 - Parses proto files at runtime.
 - Supports plain text and TLS connections.
 - Supports authentication via metadata (JWT/Token).
+- Metadata editor with -bin (binary) support; -bin values are Base64-encoded automatically.
 - Request data with JSON format.
 - Runs on Mac, Linux and build project by Maven.
 
@@ -106,8 +107,17 @@ In order to build JMeter GRPC Request from source, you will need:
 
 - TLS: supply CA/server certificate PEM via UI fields or properties
 - mTLS: additionally provide Client Cert PEM and Client Key PEM (PKCS#8)
-- This plugin uses gRPC Credentials API with grpc-netty-shaded and ALPN/HTTP2.
+- Encrypted PKCS#8 keys are supported via “Client Key Password (Optional)”.
+- This plugin uses gRPC Credentials API + grpc-netty-shaded with ALPN/HTTP2.
 - Insecure/disable verification mode has been removed.
+- “Test Connection” shows result in a dialog and logs details (initial/transition states);
+  on failures, Subject/Issuer from CA PEM are included in logs to aid debugging.
+
+### Inline Protos (optional)
+
+- Toggle “Use Inline Protos” to paste a single .proto file content directly.
+- For imports/3rd-party protos, provide a base64-encoded ZIP of the library directory.
+- The plugin extracts the ZIP to a temp folder and adds it to protoc include paths.
 
 ### Build from source
 

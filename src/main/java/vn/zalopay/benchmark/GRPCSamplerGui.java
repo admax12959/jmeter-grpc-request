@@ -304,8 +304,25 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                     ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
             log.error("[TestConnection] ERROR: {}", ex.getMessage(), ex);
+            StringBuilder hint = new StringBuilder();
+            try {
+                String keyPath = grpcSampler.getTlsClientKeyPemPath();
+                if (keyPath != null && !keyPath.trim().isEmpty()) {
+                    String head = readFirstPemHeaderLine(keyPath);
+                    if (head.contains("BEGIN RSA PRIVATE KEY")) {
+                        hint.append("\nHint: Detected PKCS#1 (RSA) private key. Convert to PKCS#8, e.g.\n")
+                            .append("openssl pkcs8 -topk8 -inform PEM -outform PEM -in client.key -out client_pkcs8.key -nocrypt\n");
+                    } else if (head.contains("BEGIN ENCRYPTED PRIVATE KEY") &&
+                            (grpcSampler.getTlsClientKeyPassword() == null || grpcSampler.getTlsClientKeyPassword().isEmpty())) {
+                        hint.append("\nHint: Encrypted PKCS#8 key detected. Please provide Client Key Password.\n");
+                    } else if (head.contains("BEGIN PRIVATE KEY") && grpcSampler.getTlsClientKeyPassword() != null && !grpcSampler.getTlsClientKeyPassword().isEmpty()) {
+                        hint.append("\nHint: Unencrypted PKCS#8 key detected, password may be unnecessary.\n");
+                    }
+                }
+            } catch (Exception ignore) {
+            }
             JOptionPane.showMessageDialog(
-                    this, ex.getMessage(), "Test Connection", JOptionPane.ERROR_MESSAGE);
+                    this, ex.getMessage() + hint.toString(), "Test Connection", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -314,6 +331,18 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
         if (p == null) return "";
         if (p.length() <= 4) return p;
         return p;
+    }
+
+    private String readFirstPemHeaderLine(String path) throws Exception {
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(path))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("-----BEGIN ")) {
+                    return line;
+                }
+            }
+            return "";
+        }
     }
 
     private JPanel getRequestJSONPanel() {
