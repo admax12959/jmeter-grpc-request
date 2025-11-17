@@ -51,37 +51,9 @@ public class ChannelFactory {
             return NettyChannelBuilder.forAddress(
                     endpoint.getHost(), endpoint.getPort(), InsecureChannelCredentials.create());
         }
-        // If client key password is provided, build Netty SslContext with password support
-        if (notBlank(security.getClientKeyPassword())) {
-            io.grpc.netty.shaded.io.netty.handler.ssl.SslContext sslContext =
-                    buildSslContextWithPassword(security);
-            return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort())
-                    .sslContext(sslContext);
-        }
         ChannelCredentials creds = buildTlsCredentials(security);
         // Use NettyChannelBuilder directly to avoid ManagedChannelRegistry provider capability checks
         return NettyChannelBuilder.forAddress(endpoint.getHost(), endpoint.getPort(), creds);
-    }
-
-    private io.grpc.netty.shaded.io.netty.handler.ssl.SslContext buildSslContextWithPassword(
-            GrpcSecurityConfig security) {
-        try {
-            io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder b =
-                    io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
-            if (notBlank(security.getCaPemPath())) {
-                b = b.trustManager(new java.io.File(security.getCaPemPath()));
-            }
-            if (notBlank(security.getClientCertPemPath()) && notBlank(security.getClientKeyPemPath())) {
-                b = b.keyManager(
-                        new java.io.File(security.getClientCertPemPath()),
-                        new java.io.File(security.getClientKeyPemPath()),
-                        security.getClientKeyPassword());
-            }
-            return b.build();
-        } catch (Exception e) {
-            LOGGER.error("Error in create SslContext {}", e.getMessage());
-            throw new RuntimeException("Error in create SSL connection!", e);
-        }
     }
 
     private ChannelCredentials buildTlsCredentials(GrpcSecurityConfig security) {
@@ -91,8 +63,12 @@ public class ChannelFactory {
                 builder = builder.trustManager(readAll(security.getCaPemPath()));
             }
             if (notBlank(security.getClientCertPemPath()) && notBlank(security.getClientKeyPemPath())) {
-                builder = builder.keyManager(
-                        readAll(security.getClientCertPemPath()), readAll(security.getClientKeyPemPath()));
+                // Normalize private key to PKCS#8, decrypt if needed, then feed into credentials API
+                java.io.InputStream certIs = readAll(security.getClientCertPemPath());
+                java.io.InputStream keyIs =
+                        vn.zalopay.benchmark.core.tls.PemUtils.normalizePrivateKeyToPkcs8PemStream(
+                                security.getClientKeyPemPath(), security.getClientKeyPassword());
+                builder = builder.keyManager(certIs, keyIs);
             }
             return builder.build();
         } catch (IOException e) {
