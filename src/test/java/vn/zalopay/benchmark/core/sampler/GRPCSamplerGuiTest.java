@@ -190,6 +190,51 @@ public class GRPCSamplerGuiTest extends BaseTest {
     }
 
     @Test
+    public void testNewTlsAndInlineFieldsPresent() throws Exception {
+        GRPCSamplerGui gui = new GRPCSamplerGui();
+
+        java.lang.reflect.Field caField = GRPCSamplerGui.class.getDeclaredField("caPemField");
+        java.lang.reflect.Field certField = GRPCSamplerGui.class.getDeclaredField("clientCertPemField");
+        java.lang.reflect.Field keyField = GRPCSamplerGui.class.getDeclaredField("clientKeyPemField");
+        java.lang.reflect.Field metaField = GRPCSamplerGui.class.getDeclaredField("metadataField");
+        java.lang.reflect.Field inlineCk = GRPCSamplerGui.class.getDeclaredField("useInlineProtoCheckBox");
+        java.lang.reflect.Field protoArea = GRPCSamplerGui.class.getDeclaredField("protoContentArea");
+        java.lang.reflect.Field libArea = GRPCSamplerGui.class.getDeclaredField("libContentArea");
+        java.lang.reflect.Field protoFolder = GRPCSamplerGui.class.getDeclaredField("protoFolderField");
+        java.lang.reflect.Field libFolder = GRPCSamplerGui.class.getDeclaredField("libFolderField");
+
+        caField.setAccessible(true);
+        certField.setAccessible(true);
+        keyField.setAccessible(true);
+        metaField.setAccessible(true);
+        inlineCk.setAccessible(true);
+        protoArea.setAccessible(true);
+        libArea.setAccessible(true);
+        protoFolder.setAccessible(true);
+        libFolder.setAccessible(true);
+
+        Assert.assertNotNull(caField.get(gui));
+        Assert.assertNotNull(certField.get(gui));
+        Assert.assertNotNull(keyField.get(gui));
+        javax.swing.JTextField meta = (javax.swing.JTextField) metaField.get(gui);
+        Assert.assertFalse(meta.isEditable());
+
+        javax.swing.JCheckBox ck = (javax.swing.JCheckBox) inlineCk.get(gui);
+        javax.swing.JTextArea pArea = (javax.swing.JTextArea) protoArea.get(gui);
+        javax.swing.JTextArea lArea = (javax.swing.JTextArea) libArea.get(gui);
+        javax.swing.JTextField pFolder = (javax.swing.JTextField) protoFolder.get(gui);
+        javax.swing.JTextField lFolder = (javax.swing.JTextField) libFolder.get(gui);
+
+        // Toggle inline and verify enable/disable state switches
+        boolean init = ck.isSelected();
+        ck.doClick();
+        Assert.assertEquals(pArea.isEnabled(), !init);
+        Assert.assertEquals(lArea.isEnabled(), !init);
+        Assert.assertEquals(pFolder.isEnabled(), init);
+        Assert.assertEquals(lFolder.isEnabled(), init);
+    }
+
+    @Test
     public void verifyCanPerformGetMethodNameWithNotReload()
             throws NoSuchFieldException, IllegalAccessException {
         GRPCSamplerGui grpRequestPluginGUI = new GRPCSamplerGui();

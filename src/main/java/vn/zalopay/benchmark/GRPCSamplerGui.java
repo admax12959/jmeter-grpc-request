@@ -274,10 +274,15 @@ public class GRPCSamplerGui extends AbstractSamplerGui {
                             .clientCertPemPath(grpcSampler.getTlsClientCertPemPath())
                             .clientKeyPemPath(grpcSampler.getTlsClientKeyPemPath())
                             .build();
-            boolean ok = new vn.zalopay.benchmark.core.ui.ConnectionTester().test(cfg, 2000);
+            vn.zalopay.benchmark.core.ui.ConnectionTester tester =
+                    new vn.zalopay.benchmark.core.ui.ConnectionTester();
+            boolean ok = tester.test(cfg, 2000);
+            String detail = vn.zalopay.benchmark.core.ui.ConnectionTester.parseCertDetails(
+                    grpcSampler.getTlsCaPemPath());
+            String msg = ok ? "Connection OK" : ("Connection failed\n" + detail);
             JOptionPane.showMessageDialog(
                     this,
-                    ok ? "Connection OK" : "Connection failed",
+                    msg,
                     "Test Connection",
                     ok ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
